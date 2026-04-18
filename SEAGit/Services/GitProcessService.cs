@@ -13,21 +13,58 @@ namespace SEAGit.Services
 
         public string InitializeRepo(string targetDirectory)
         {
-            return RunGitCommand(targetDirectory, "init");
+            string initResult = RunGitCommand(targetDirectory, "init");
+
+            // Immediately rename the default branch to 'main' to match modern GitHub standards
+            RunGitCommand(targetDirectory, "branch -M main");
+
+            return initResult.StartsWith("Error") ? initResult : "Repository initialized successfully.";
         }
 
-        public string CommitAndPush(string targetDirectory, string commitMessage = "Auto-published via SEAGit")
+        public bool HasRemote(string targetDirectory)
         {
-            // 1. Stage all changes
+            string output = RunGitCommand(targetDirectory, "remote -v");
+            return !string.IsNullOrWhiteSpace(output) && !output.StartsWith("Error");
+        }
+
+        public string AddRemote(string targetDirectory, string url)
+        {
+            return RunGitCommand(targetDirectory, $"remote add origin \"{url}\"");
+        }
+
+        public string CommitAndPush(string targetDirectory, string repoName, string commitMessage = "Auto-published via SEAGit")
+        {
+            // 1. Check for changes using 'porcelain' (machine-readable format)
+            string statusOutput = RunGitCommand(targetDirectory, "status --porcelain");
+
+            if (statusOutput.StartsWith("Error"))
+                return statusOutput;
+
+            if (string.IsNullOrWhiteSpace(statusOutput))
+            {
+                return $"No changes made to {repoName}. Everything is up to date.";
+            }
+
+            // Count the lines in the porcelain output to get the number of modified/added files
+            int fileCount = statusOutput.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
+            // 2. Stage all changes
             RunGitCommand(targetDirectory, "add -A");
 
-            // 2. Commit the changes
+            // 3. Commit the changes
             string commitCommand = $"commit -m \"{commitMessage}\"";
-            RunGitCommand(targetDirectory, commitCommand);
+            string commitRes = RunGitCommand(targetDirectory, commitCommand);
 
-            // 3. Push to GitHub (Relies on Git Credential Manager for auth)
-            // Note: Assumes 'main' is the default branch. 
-            return RunGitCommand(targetDirectory, "push origin main");
+            if (commitRes.StartsWith("Error"))
+                return commitRes;
+
+            // 4. Push to GitHub (Using -u to set upstream tracking if this is the very first push)
+            string pushRes = RunGitCommand(targetDirectory, "push -u origin main");
+
+            if (pushRes.StartsWith("Error"))
+                return pushRes;
+
+            return $"{fileCount} file(s) successfully pushed to repository {repoName}.";
         }
 
         private string RunGitCommand(string workingDirectory, string arguments)
@@ -49,8 +86,7 @@ namespace SEAGit.Services
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
 
-                // Git often writes progress and warnings to StandardError even on a successful exit.
-                // We check the ExitCode to determine true success.
+                // Git pushes often write progress to StandardError. We check ExitCode for true success.
                 return process.ExitCode == 0 ? output : $"Error executing '{arguments}':\n{error}";
             }
         }

@@ -34,25 +34,23 @@ namespace SEAGit
             using (var folderDialog = new FolderBrowserDialog())
             {
                 folderDialog.Description = "Select a local Git repository folder";
-                
+
                 if (folderDialog.ShowDialog() == DialogResult.OK)
                 {
                     string selectedPath = folderDialog.SelectedPath;
 
-                    // Check if it's already in the list
                     if (_repositories.Any(r => r.LocalPath.Equals(selectedPath, StringComparison.OrdinalIgnoreCase)))
                     {
                         LogMessage($"Folder is already tracked: {selectedPath}");
                         return;
                     }
 
-                    // Check if it's actually a Git repo
                     if (!_gitService.IsValidGitRepo(selectedPath))
                     {
                         var result = MessageBox.Show(
-                            "This folder is not a Git repository. Would you like SEAGit to initialize it for you?", 
-                            "Initialize Repository?", 
-                            MessageBoxButtons.YesNo, 
+                            "This folder is not a Git repository. Would you like SEAGit to initialize it for you?",
+                            "Initialize Repository?",
+                            MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question);
 
                         if (result == DialogResult.Yes)
@@ -76,7 +74,7 @@ namespace SEAGit
                     _repositories.Add(newRepo);
                     _storageService.SaveRepositories(_repositories);
                     RefreshRepoList();
-                    
+
                     LogMessage($"Added tracking for: {newRepo.Name}");
                 }
             }
@@ -92,20 +90,42 @@ namespace SEAGit
 
             var selectedRepo = (GitRepository)lstRepos.SelectedItem;
 
+            // Check if remote URL exists before trying to push
+            if (!_gitService.HasRemote(selectedRepo.LocalPath))
+            {
+                string url = PromptForGitHubUrl();
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    LogMessage("Publish cancelled. A remote URL is required to publish.");
+                    return;
+                }
+
+                string remoteResult = _gitService.AddRemote(selectedRepo.LocalPath, url);
+                if (remoteResult.StartsWith("Error"))
+                {
+                    LogMessage(remoteResult);
+                    return;
+                }
+                LogMessage($"Successfully linked {selectedRepo.Name} to GitHub.");
+            }
+
             btnPublish.Enabled = false;
             btnPublish.Text = "Publishing...";
-            LogMessage($"\n--- Publishing {selectedRepo.Name} ---");
-            Application.DoEvents(); // Force UI update before blocking thread
+            LogMessage($"\n--- Analyzing {selectedRepo.Name} ---");
+            Application.DoEvents();
 
             try
             {
-                string result = _gitService.CommitAndPush(selectedRepo.LocalPath);
+                string result = _gitService.CommitAndPush(selectedRepo.LocalPath, selectedRepo.Name);
                 LogMessage(result);
 
-                // Update the last published timestamp
-                selectedRepo.LastPublished = DateTime.Now;
-                _storageService.SaveRepositories(_repositories);
-                RefreshRepoList();
+                // Only update the timestamp if it actually pushed changes (avoids errors being flagged as success)
+                if (!result.StartsWith("Error") && !result.StartsWith("No changes"))
+                {
+                    selectedRepo.LastPublished = DateTime.Now;
+                    _storageService.SaveRepositories(_repositories);
+                    RefreshRepoList();
+                }
             }
             catch (Exception ex)
             {
@@ -118,15 +138,38 @@ namespace SEAGit
             }
         }
 
+        // Programmatically generate an input form for the GitHub URL
+        private string PromptForGitHubUrl()
+        {
+            using (Form prompt = new Form())
+            {
+                prompt.Width = 500;
+                prompt.Height = 160;
+                prompt.FormBorderStyle = FormBorderStyle.FixedDialog;
+                prompt.Text = "Link to GitHub";
+                prompt.StartPosition = FormStartPosition.CenterParent;
+                prompt.MaximizeBox = false;
+                prompt.MinimizeBox = false;
+
+                Label textLabel = new Label() { Left = 20, Top = 20, Width = 440, Text = "This repository isn't linked to GitHub yet.\nPlease paste your empty GitHub Repository URL:" };
+                TextBox textBox = new TextBox() { Left = 20, Top = 60, Width = 440 };
+                Button confirmation = new Button() { Text = "Link and Publish", Left = 340, Width = 120, Top = 90, DialogResult = DialogResult.OK };
+
+                prompt.Controls.Add(textLabel);
+                prompt.Controls.Add(textBox);
+                prompt.Controls.Add(confirmation);
+                prompt.AcceptButton = confirmation;
+
+                return prompt.ShowDialog() == DialogResult.OK ? textBox.Text.Trim() : string.Empty;
+            }
+        }
+
         private void RefreshRepoList()
         {
             lstRepos.DataSource = null;
             lstRepos.DataSource = _repositories;
-            
-            // Format how the object looks in the ListBox
-            lstRepos.DisplayMember = "Name"; 
-            
-            // Optional: You could create a custom string format here to show the LocalPath or LastPublished date
+            lstRepos.DisplayMember = "Name";
+
             lstRepos.Format += (s, e) =>
             {
                 var repo = (GitRepository)e.ListItem;
@@ -138,9 +181,8 @@ namespace SEAGit
         private void LogMessage(string message)
         {
             if (string.IsNullOrWhiteSpace(message)) return;
-            
+
             txtLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
-            // Auto-scroll to bottom
             txtLog.SelectionStart = txtLog.Text.Length;
             txtLog.ScrollToCaret();
         }

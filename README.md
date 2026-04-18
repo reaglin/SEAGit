@@ -4,6 +4,13 @@ Welcome to SEAGit! This tool is designed to completely remove the complexity of 
 
 Whether you are saving backups of your code or publishing a simple HTML website, SEAGit makes it a one-click process.
 
+### 📥 Download and Install
+**[Download the latest SEAGit Installer for Windows](https://github.com/reaglin/SEAGit/releases/latest)**
+
+*(The installer will automatically check for and download the required .NET 8 Runtime if your system needs it.)*
+
+---
+
 ## 🚀 How to Use SEAGit (Step-by-Step)
 
 ### Step 1: Get the Basics
@@ -63,4 +70,4 @@ If you pushed HTML files (like an `index.html`):
 5. Give it a minute or two, and your website will be live on the internet!
 
 ---
-*Conceptualized and built by you, with code architecture produced in conjunction with Google Gemini.*
+*Conceptualized and built by Ron Eaglin, with code architecture produced in conjunction with Google Gemini.*

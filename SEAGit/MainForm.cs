@@ -16,6 +16,7 @@ namespace SEAGit
 
         public MainForm()
         {
+            this.Icon = new System.Drawing.Icon("seagit.ico");
             InitializeComponent();
             _storageService = new StorageService();
             _gitService = new GitProcessService();

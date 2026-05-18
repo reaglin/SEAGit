@@ -110,7 +110,7 @@ cd msix
 ```
 This produces:
 ```
-WapProjTemplate\AppPackages\Seagit.Package_<version>_x64_bundle.msixupload
+WapProjTemplate\AppPackages\Store\Seagit.Package_<version>_x64_bundle.msixupload
 ```
 
 > Build with the script, **not** Visual Studio's "Create App Packages" wizard —
@@ -121,7 +121,7 @@ WapProjTemplate\AppPackages\Seagit.Package_<version>_x64_bundle.msixupload
 The Microsoft Store certifies the package on submission, so this is optional.
 To check first, run the **Windows App Cert Kit** GUI from the Start Menu, or
 `appcert.exe` from an Administrator prompt, against the `.msixbundle` in
-`WapProjTemplate\AppPackages\Seagit.Package_<version>_x64_Test\`.
+`WapProjTemplate\AppPackages\Sideload\Seagit.Package_<version>_x64_Test\`.
 
 ### Step 4 — Upload the package to Partner Center
 1. partner.microsoft.com → **SEAGit → Submissions** → start a new submission
@@ -196,6 +196,6 @@ in the submission. Keep the hosted copy and `PRIVACY_POLICY.txt` in sync.
 | Visual assets | `WapProjTemplate/Images/` |
 | Build script | `msix/build-msix.ps1` |
 | In-repo MSIX notes | `msix/README.md` |
-| Build output | `WapProjTemplate/AppPackages/` |
+| Build output | `WapProjTemplate/AppPackages/Store/` and `/Sideload/` |
 | Signing certificate | `msix/SEAGit-SelfSigned.{cer,pfx}` |
 | Privacy policy text | `PRIVACY_POLICY.txt` |

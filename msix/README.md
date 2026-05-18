@@ -34,12 +34,13 @@ baked into `WapProjTemplate/Package.appxmanifest`:
 .\build-msix.ps1 -Mode Sideload
 ```
 
-Output lands in `WapProjTemplate\AppPackages\`:
+Each mode writes to its own subfolder of `WapProjTemplate\AppPackages\`, so
+Store and Sideload builds never overwrite each other:
 
-- **Store:** `Seagit.Package_<ver>_x64_bundle.msixupload` — upload this to
-  Partner Center **unsigned**; the Store signs it.
-- **Sideload:** `..._x64_Test\Seagit.Package_<ver>_x64.msix` — signed,
-  directly installable.
+- **Store:** `AppPackages\Store\Seagit.Package_<ver>_x64_bundle.msixupload` —
+  upload this to Partner Center **unsigned**; the Store signs it.
+- **Sideload:** `AppPackages\Sideload\Seagit.Package_<ver>_x64_Test\Seagit.Package_<ver>_x64.msix`
+  — signed, directly installable.
 
 ## Project configuration (already applied — reference only)
 

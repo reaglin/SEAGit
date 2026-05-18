@@ -45,7 +45,9 @@ $ErrorActionPreference = 'Stop'
 # -- Paths --------------------------------------------------------------------
 $repo    = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $wapproj = Join-Path $repo 'WapProjTemplate\Seagit.Package.wapproj'
-$pkgDir  = Join-Path $repo 'WapProjTemplate\AppPackages\'
+# Store and Sideload write to separate subfolders so the two builds do not
+# overwrite each other (each runs /t:Rebuild, cleaning only its own folder).
+$pkgDir  = Join-Path $repo "WapProjTemplate\AppPackages\$Mode\"
 
 if (-not (Test-Path $wapproj)) { throw "Packaging project not found: $wapproj" }
 
@@ -97,7 +99,7 @@ if ($LASTEXITCODE -ne 0) { throw "MSBuild failed (exit code $LASTEXITCODE)." }
 
 # -- Report -------------------------------------------------------------------
 Write-Host "`nBuild succeeded. Recent package output:" -ForegroundColor Green
-Get-ChildItem -LiteralPath (Join-Path $repo 'WapProjTemplate\AppPackages') `
+Get-ChildItem -LiteralPath $pkgDir `
               -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.Extension -in '.msix', '.msixbundle', '.msixupload' } |
     Sort-Object LastWriteTime -Descending |

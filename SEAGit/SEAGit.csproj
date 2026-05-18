@@ -7,6 +7,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>icons\seagit.ico</ApplicationIcon>
+    <!-- Enables restore/publish for the win-x64 self-contained MSIX build.
+         Does not change the default framework-dependent build. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>

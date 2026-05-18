@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  SEAGit - Microsoft Store (MSIX) package manifest.
+
+  Identity comes verbatim from Partner Center
+  (SEAGit -> Product management -> Product identity) and must not be edited by
+  hand except for the Version attribute on each release.
+-->
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <!-- Version is 4-part; the final digit must stay 0 (reserved by the Store). -->
+  <Identity
+    Name="DeanEaglin.SEAGit"
+    Publisher="CN=E88392BA-A722-4B3A-8372-04403A55AA63"
+    Version="1.0.0.0" />
+
+  <Properties>
+    <DisplayName>SEAGit</DisplayName>
+    <PublisherDisplayName>Dean Eaglin</PublisherDisplayName>
+    <Logo>Images\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.17763.0"
+      MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <!-- $targetnametoken$ / $targetentrypoint$ are substituted at build time
+         from the referenced SEAGit project (the .wapproj entry point). -->
+    <Application
+      Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="SEAGit"
+        Description="Super-easy Git: publish a folder on your computer straight to GitHub in one click - no branching, staging, or command-line knowledge required."
+        BackgroundColor="transparent"
+        Square150x150Logo="Images\Square150x150Logo.png"
+        Square44x44Logo="Images\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Images\SplashScreen.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- runFullTrust: required for a packaged Win32/WinForms desktop app. -->
+    <rescap:Capability Name="runFullTrust" />
+    <!-- internetClient: SEAGit communicates with GitHub. -->
+    <Capability Name="internetClient" />
+  </Capabilities>
+</Package>

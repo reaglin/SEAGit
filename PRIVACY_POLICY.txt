@@ -1,0 +1,60 @@
+SEAGit - Privacy Policy
+
+Last updated: May 18, 2026
+
+SEAGit (Super-Easy and Accessible Git) is a desktop application for Windows
+that lets you publish a folder on your computer to GitHub without using the
+command line. This policy explains what data the application handles.
+
+
+1. DATA STORED ON YOUR COMPUTER
+
+SEAGit stores its settings and the list of folders you have added locally on
+your computer. This information stays on your computer and is not sent to the
+developer.
+
+
+2. PUBLISHING TO GITHUB
+
+SEAGit's purpose is to publish the contents of folders you select to a GitHub
+repository that you specify. When you publish, the files in that folder are
+uploaded to GitHub. Your use of GitHub, and the storage of any files you
+publish, are governed by GitHub's own terms and privacy policy.
+
+
+3. GITHUB SIGN-IN
+
+To publish, SEAGit signs you in to GitHub using the standard Git and Windows
+credential process - typically a secure browser-based GitHub login. Your GitHub
+credentials are managed by Git Credential Manager and Windows; SEAGit does not
+store, see, or transmit your GitHub password.
+
+
+4. GIT FOR WINDOWS
+
+SEAGit performs version-control operations using Git for Windows, which you
+install separately. SEAGit invokes that local Git installation on your computer.
+
+
+5. INFORMATION THE DEVELOPER COLLECTS
+
+SEAGit contains no analytics or telemetry. The developer does not collect,
+receive, or store your files, your credentials, or any personal information.
+
+
+6. CHILDREN
+
+SEAGit is a developer and productivity tool intended for general audiences. It
+is not directed at children.
+
+
+7. CHANGES TO THIS POLICY
+
+This policy may be updated from time to time. The "Last updated" date above
+indicates when it was last revised.
+
+
+8. CONTACT
+
+For questions about this privacy policy, visit https://github.com/reaglin/SEAGit
+Contact email: [add a support email address here before publishing]

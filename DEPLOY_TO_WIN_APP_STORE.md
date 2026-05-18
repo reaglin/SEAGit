@@ -84,7 +84,8 @@ template default. This is cosmetic; package identity comes from the manifest.)
 The signed sideload package uses a self-signed code-signing certificate:
 - `msix/SEAGit-SelfSigned.cer` — public cert (committed).
 - `msix/SEAGit-SelfSigned.pfx` — private key, **git-ignored, never commit or
-  share**. Password `SEAGit-Dev-Sign`. Expires May 2029.
+  share**. Expires May 2029. Its password is **not stored in the repo** —
+  supply it via the `SEAGIT_CERT_PASSWORD` environment variable.
 
 To recreate it, see `msix/README.md`.
 

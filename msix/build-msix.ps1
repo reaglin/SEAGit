@@ -23,7 +23,9 @@
     Path to the signing .pfx. Sideload mode only.
 
 .PARAMETER CertPassword
-    Password for the signing .pfx. Sideload mode only.
+    Password for the signing .pfx. Sideload mode only. Not stored in the repo:
+    defaults to the SEAGIT_CERT_PASSWORD environment variable; if neither
+    the parameter nor the variable is set, the script prompts for it.
 
 .EXAMPLE
     .\build-msix.ps1 -Mode Store
@@ -37,7 +39,10 @@ param(
     [string] $Mode = 'Store',
 
     [string] $CertPath     = (Join-Path $PSScriptRoot 'SEAGit-SelfSigned.pfx'),
-    [string] $CertPassword = 'SEAGit-Dev-Sign'
+
+    # Password for the signing .pfx. Not stored in the repo: defaults to the
+    # SEAGIT_CERT_PASSWORD environment variable, prompted for if unset.
+    [string] $CertPassword = $env:SEAGIT_CERT_PASSWORD
 )
 
 $ErrorActionPreference = 'Stop'
@@ -83,6 +88,11 @@ if ($Mode -eq 'Store') {
 else {
     if (-not (Test-Path $CertPath)) {
         throw "Signing certificate not found: $CertPath  (see README.md to recreate it)"
+    }
+    if ([string]::IsNullOrEmpty($CertPassword)) {
+        $secure = Read-Host 'Signing certificate password (SEAGIT_CERT_PASSWORD not set)' -AsSecureString
+        $CertPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
     }
     Write-Host 'Building SIGNED sideload package (.msix)...' -ForegroundColor Cyan
     $buildArgs += @(

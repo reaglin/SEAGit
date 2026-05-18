@@ -61,17 +61,22 @@ whose subject matches the manifest `Publisher`.
 - `SEAGit-SelfSigned.cer` — public certificate (committed). Trust this to
   install the sideload package.
 - `SEAGit-SelfSigned.pfx` — **private key. Git-ignored — never commit or share
-  it.** Password: `SEAGit-Dev-Sign`. Valid until **May 2029**.
+  it.** Valid until **May 2029**. Its password is **not stored in the repo** —
+  keep it in a password manager and supply it via the `SEAGIT_CERT_PASSWORD`
+  environment variable when building.
 
 To recreate the certificate (new machine, or after expiry), run from this
 folder:
 
 ```powershell
+# Choose a strong .pfx password and keep it out of the repository:
+$env:SEAGIT_CERT_PASSWORD = '<choose a strong password>'
+
 $cert = New-SelfSignedCertificate -Type CodeSigningCert `
   -Subject "CN=E88392BA-A722-4B3A-8372-04403A55AA63" `
   -KeyExportPolicy Exportable -CertStoreLocation "Cert:\CurrentUser\My" `
   -FriendlyName "SEAGit self-signed (sideload)" -NotAfter (Get-Date).AddYears(3)
-$pw = ConvertTo-SecureString "SEAGit-Dev-Sign" -AsPlainText -Force
+$pw = ConvertTo-SecureString $env:SEAGIT_CERT_PASSWORD -AsPlainText -Force
 Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath ".\SEAGit-SelfSigned.pfx" -Password $pw
 Export-Certificate   -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath ".\SEAGit-SelfSigned.cer"
 ```

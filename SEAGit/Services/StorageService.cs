@@ -12,8 +12,15 @@ namespace SEAGit.Services
 
         public StorageService()
         {
-            // Saves a repos.json file right next to the SEAGit executable
-            _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "repos.json");
+            // repos.json lives in the user's local app data, NOT next to the
+            // executable. Under MSIX the install folder
+            // (C:\Program Files\WindowsApps\...) is read-only, so writing there
+            // threw UnauthorizedAccessException. %LocalAppData%\SEAGit is writable.
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SEAGit");
+            Directory.CreateDirectory(dir);
+            _filePath = Path.Combine(dir, "repos.json");
         }
 
         public List<GitRepository> LoadRepositories()

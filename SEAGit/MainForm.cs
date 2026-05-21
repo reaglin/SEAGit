@@ -16,7 +16,19 @@ namespace SEAGit
 
         public MainForm()
         {
-            this.Icon = new System.Drawing.Icon("seagit.ico");
+            // Load the window icon from the app folder (AppContext.BaseDirectory),
+            // never a bare relative path: launched from the Start menu (MSIX) the
+            // working directory is not the app folder, so "seagit.ico" was not
+            // found and the constructor threw — crashing the app at launch
+            // (0xe0434352). Guarded so a missing icon can never crash startup.
+            try
+            {
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "seagit.ico");
+                if (File.Exists(iconPath))
+                    this.Icon = new System.Drawing.Icon(iconPath);
+            }
+            catch { /* fall back to the embedded application icon */ }
+
             InitializeComponent();
             _storageService = new StorageService();
             _gitService = new GitProcessService();

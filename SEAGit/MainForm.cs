@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -40,6 +41,50 @@ namespace SEAGit
             _repositories = _storageService.LoadRepositories();
             RefreshRepoList();
             LogMessage("SEAGit initialized and ready.");
+
+            // SEAGit drives Git for Windows; if it is not installed every git
+            // action fails. Tell the user up front rather than letting an action
+            // throw a confusing error (the Store cert lab has no Git installed).
+            if (!_gitService.IsGitInstalled())
+            {
+                LogMessage("⚠ Git for Windows was not found. SEAGit needs it to publish folders to " +
+                           "GitHub. Install it free from https://gitforwindows.org/, then restart SEAGit.");
+                ShowGitRequiredDialog();
+            }
+        }
+
+        /// <summary>
+        /// Returns true if Git for Windows is available; otherwise shows the
+        /// "Git for Windows required" dialog and returns false. Call before any
+        /// action that shells out to git.
+        /// </summary>
+        private bool EnsureGitOrWarn()
+        {
+            if (_gitService.IsGitInstalled()) return true;
+            ShowGitRequiredDialog();
+            return false;
+        }
+
+        private void ShowGitRequiredDialog()
+        {
+            var choice = MessageBox.Show(
+                "Git for Windows is required.\n\n" +
+                "SEAGit publishes your folders to GitHub using Git for Windows, which does not " +
+                "appear to be installed on this PC.\n\n" +
+                "Install Git for Windows (it is free), then restart SEAGit.\n\n" +
+                "Open the Git for Windows download page now?",
+                "SEAGit — Git for Windows Required",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (choice == DialogResult.Yes)
+                OpenUrl("https://gitforwindows.org/");
+        }
+
+        private static void OpenUrl(string url)
+        {
+            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+            catch { /* nothing useful to do if the browser cannot be opened */ }
         }
 
         private void BtnAddRepo_Click(object sender, EventArgs e)
@@ -68,6 +113,7 @@ namespace SEAGit
 
                         if (result == DialogResult.Yes)
                         {
+                            if (!EnsureGitOrWarn()) return;
                             string initLog = _gitService.InitializeRepo(selectedPath);
                             LogMessage(initLog);
                         }
@@ -100,6 +146,8 @@ namespace SEAGit
                 MessageBox.Show("Please select a repository from the list first.", "Select Repo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            if (!EnsureGitOrWarn()) return;
 
             var selectedRepo = (GitRepository)lstRepos.SelectedItem;
 

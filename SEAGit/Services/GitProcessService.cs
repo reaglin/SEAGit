@@ -11,6 +11,35 @@ namespace SEAGit.Services
             return Directory.Exists(Path.Combine(path, ".git"));
         }
 
+        /// <summary>
+        /// True if Git for Windows is available (git --version succeeds). SEAGit
+        /// shells out to git.exe; when it is not installed Process.Start throws
+        /// Win32Exception ("The system cannot find the file specified"), which
+        /// previously surfaced as an unexpected-error crash during "initialize
+        /// repository". Used to warn the user up front and gate git actions.
+        /// </summary>
+        public bool IsGitInstalled()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("git", "--version")
+                {
+                    CreateNoWindow         = true,
+                    UseShellExecute        = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true
+                };
+                using var p = Process.Start(psi);
+                if (p == null) return false;
+                p.WaitForExit();
+                return p.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public string InitializeRepo(string targetDirectory)
         {
             string initResult = RunGitCommand(targetDirectory, "init");
@@ -78,16 +107,28 @@ namespace SEAGit.Services
                 RedirectStandardError = true
             };
 
-            using (var process = Process.Start(processInfo))
+            try
             {
-                if (process == null) return "Error: Could not initialize the Git process.";
+                using (var process = Process.Start(processInfo))
+                {
+                    if (process == null) return "Error: Could not start the Git process.";
 
-                process.WaitForExit();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
 
-                // Git pushes often write progress to StandardError. We check ExitCode for true success.
-                return process.ExitCode == 0 ? output : $"Error executing '{arguments}':\n{error}";
+                    // Git pushes often write progress to StandardError. We check ExitCode for true success.
+                    return process.ExitCode == 0 ? output : $"Error executing '{arguments}':\n{error}";
+                }
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // git.exe could not be started — Git for Windows is not installed
+                // or not on the PATH. Return a clear, actionable message instead
+                // of letting the Win32Exception crash the app.
+                return "Error: Git for Windows is not installed (or not on the PATH). " +
+                       "SEAGit uses Git for Windows to publish your folders to GitHub. " +
+                       "Install it from https://gitforwindows.org/ and restart SEAGit.";
             }
         }
     }

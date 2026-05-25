@@ -18,56 +18,77 @@ namespace SEAGit
         [STAThread]
         static void Main()
         {
+            // Route UI-thread exceptions to Application.ThreadException (below)
+            // instead of letting them terminate the process. Without this the
+            // mode is "Automatic", and on some configurations a launch-time UI
+            // exception becomes a fatal unhandled exception with no dialog —
+            // exactly the silent "crashes at launch" the Store cert lab reported.
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+
             // Install crash handlers FIRST so a launch-time exception is logged
-            // and shown rather than terminating the process silently. The Store
-            // certification lab saw only a 0xe0434352 (unhandled managed
-            // exception) crash with no further detail; this captures the cause.
+            // AND shown rather than terminating the process silently. The cert
+            // lab returns a screen capture, not files, so every handler must put
+            // the full error (type + message + stack) on screen — a crash-log
+            // file alone tells us nothing about a failure we can't reproduce.
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
-                if (e.ExceptionObject is Exception ex)
-                    WriteCrashLog("Unhandled domain exception", ex);
+                var ex = e.ExceptionObject as Exception;
+                WriteCrashLog("Unhandled domain exception", ex);
+                ShowError("Unhandled error", ex);
             };
 
             Application.ThreadException += (s, e) =>
             {
                 WriteCrashLog("Unhandled UI thread exception", e.Exception);
-                try
-                {
-                    MessageBox.Show(
-                        "SEAGit hit an unexpected error.\n\n" +
-                        e.Exception.Message + "\n\n" +
-                        "A crash log was written to:\n" + CrashLogPath,
-                        "SEAGit — Unexpected Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch { /* ignore */ }
+                ShowError("UI thread error", e.Exception);
             };
 
             try
             {
+                WriteCrashLog("Startup breadcrumb", null, "Main entered");
                 ApplicationConfiguration.Initialize();
-                Application.Run(new MainForm());
+
+                WriteCrashLog("Startup breadcrumb", null, "Config initialized; creating MainForm");
+                var form = new MainForm();
+
+                WriteCrashLog("Startup breadcrumb", null, "MainForm created; entering message loop");
+                Application.Run(form);
             }
             catch (Exception ex)
             {
                 WriteCrashLog("SEAGit startup failed", ex);
-                try
-                {
-                    MessageBox.Show(
-                        "SEAGit could not start.\n\n" + ex.Message + "\n\n" +
-                        "A crash log was written to:\n" + CrashLogPath,
-                        "SEAGit — Startup Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch { /* nothing more we can do */ }
+                ShowError("Startup error", ex);
             }
         }
 
         /// <summary>
-        /// Appends a crash entry to <see cref="CrashLogPath"/>. Swallows its own
-        /// errors — there is nothing useful to do if even this fails.
+        /// Shows the full exception detail in a message box so it is captured by
+        /// the cert lab's screen grab. Truncated to stay on screen; the complete
+        /// trace is always in the crash log. Guarded — never throws.
         /// </summary>
-        private static void WriteCrashLog(string title, Exception ex)
+        private static void ShowError(string stage, Exception? ex)
+        {
+            try
+            {
+                string detail = Describe(stage, ex);
+                if (detail.Length > 1800) detail = detail[..1800] + "\n…(truncated; full detail in crash log)";
+
+                MessageBox.Show(
+                    "SEAGit could not start because of an unexpected error.\n\n" +
+                    detail +
+                    "\n\nFull crash log:\n" + CrashLogPath,
+                    "SEAGit — Startup Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch { /* nothing more we can do if even the dialog fails */ }
+        }
+
+        /// <summary>
+        /// Appends a crash (or breadcrumb) entry to <see cref="CrashLogPath"/>.
+        /// Swallows its own errors — there is nothing useful to do if even this
+        /// fails. Pass <paramref name="note"/> for a breadcrumb with no exception.
+        /// </summary>
+        private static void WriteCrashLog(string title, Exception? ex, string? note = null)
         {
             try
             {
@@ -75,9 +96,25 @@ namespace SEAGit
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.AppendAllText(path,
                     $"--- {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}Z  {title}\n" +
-                    $"OS: {Environment.OSVersion}\n{ex}\n\n");
+                    Describe(note ?? title, ex) + "\n\n");
             }
             catch { /* ignore */ }
+        }
+
+        /// <summary>
+        /// Builds a single diagnostic string: stage, OS, exception type, message,
+        /// stack, and inner-exception chain. Used for both the log and the dialog.
+        /// </summary>
+        private static string Describe(string stage, Exception? ex)
+        {
+            string text = $"Stage: {stage}\nOS: {Environment.OSVersion}  64-bit: {Environment.Is64BitOperatingSystem}";
+            for (var e = ex; e != null; e = e.InnerException)
+            {
+                text += $"\n\n{e.GetType().FullName}: {e.Message}";
+                if (!string.IsNullOrEmpty(e.StackTrace))
+                    text += "\n" + e.StackTrace;
+            }
+            return text;
         }
     }
 }

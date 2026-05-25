@@ -36,20 +36,55 @@ namespace SEAGit
             _repositories = new List<GitRepository>();
         }
 
+        private bool _gitCheckDone;
+
         private void MainForm_Load(object sender, EventArgs e)
         {
-            _repositories = _storageService.LoadRepositories();
-            RefreshRepoList();
-            LogMessage("SEAGit initialized and ready.");
-
-            // SEAGit drives Git for Windows; if it is not installed every git
-            // action fails. Tell the user up front rather than letting an action
-            // throw a confusing error (the Store cert lab has no Git installed).
-            if (!_gitService.IsGitInstalled())
+            // Keep launch resilient: any failure here is logged and surfaced, but
+            // never allowed to escape and terminate the app before the window is
+            // shown. The Git-for-Windows check is deferred to OnShown so the main
+            // window paints first (see below).
+            try
             {
-                LogMessage("⚠ Git for Windows was not found. SEAGit needs it to publish folders to " +
-                           "GitHub. Install it free from https://gitforwindows.org/, then restart SEAGit.");
-                ShowGitRequiredDialog();
+                _repositories = _storageService.LoadRepositories();
+                RefreshRepoList();
+                LogMessage("SEAGit initialized and ready.");
+            }
+            catch (Exception ex)
+            {
+                LogMessage("Startup warning: " + ex.Message);
+                MessageBox.Show(
+                    "SEAGit started but could not load its saved repository list.\n\n" + ex.Message,
+                    "SEAGit — Startup Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            // Run the Git-for-Windows check only AFTER the main window is painted,
+            // so the app visibly launches before any modal dialog appears. The
+            // Store cert lab runs on a machine with no Git installed; showing this
+            // dialog from Load — before the window was drawn — made the app look
+            // like it failed to launch. SEAGit drives Git for Windows, so if it is
+            // missing we tell the user up front rather than failing later.
+            if (_gitCheckDone) return;
+            _gitCheckDone = true;
+
+            try
+            {
+                if (!_gitService.IsGitInstalled())
+                {
+                    LogMessage("⚠ Git for Windows was not found. SEAGit needs it to publish folders to " +
+                               "GitHub. Install it free from https://gitforwindows.org/, then restart SEAGit.");
+                    ShowGitRequiredDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage("Could not check for Git for Windows: " + ex.Message);
             }
         }
 

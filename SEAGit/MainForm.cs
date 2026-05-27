@@ -4,12 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using SEAGit.Forms;
 using SEAGit.Models;
 using SEAGit.Services;
 
 namespace SEAGit
 {
-    public partial class MainForm : Form
+    public partial class MainForm : DpiAwareForm
     {
         private readonly StorageService _storageService;
         private readonly GitProcessService _gitService;
@@ -237,7 +238,8 @@ namespace SEAGit
         // Programmatically generate an input form for the GitHub URL
         private string PromptForGitHubUrl()
         {
-            using (Form prompt = new Form())
+            // DpiAwareForm so this dialog scales correctly on high-DPI displays.
+            using (Form prompt = new DpiAwareForm())
             {
                 prompt.Width = 500;
                 prompt.Height = 160;

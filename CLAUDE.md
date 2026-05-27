@@ -54,8 +54,9 @@ Treat anything that grants access or proves identity as a secret, and keep it ou
 
 SEAGit can run on high-resolution laptops (for example 2880×1920 at 200% scale). WinForms does **not** scale correctly by default — windows and controls can render too small or get clipped.
 
-- Confirm the app is per-monitor DPI aware: `Program.cs` should call `Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)` (or the app manifest should declare it).
-- If forms or controls render too small on a high-DPI display, apply the `DpiAwareForm` / `DpiAwareUserControl` pattern: a base class that establishes the 96-DPI baseline and scales in `OnLoad`, after the controls have been added.
+- Per-monitor DPI awareness is declared in `SEAGit/app.manifest` (`PerMonitorV2`) and wired in via `<ApplicationManifest>` in `SEAGit/SEAGit.csproj` — both must stay in place.
+- **Every form inherits from `SEAGit.Forms.DpiAwareForm`** (`SEAGit/Forms/DpiAwareForm.cs`). Never derive a new form directly from `Form`. The base class sets the 96-DPI baseline, switches to `AutoScaleMode.Dpi`, and calls `PerformAutoScale()` in `OnLoad`, after the constructor has added every control.
+- A form that overrides `OnLoad` **must** call `base.OnLoad(e)`, or scaling never runs.
 - Lay out forms at the 96-DPI design baseline. Pixel `Size`/`Location` values need scaling — point-based fonts already render at the correct physical size at any DPI.
 - The full rationale and a reusable drop-in recipe are documented in `DISPLAY_FIX.md` in the sibling **CIATLE** repository.
-- **Always test on a high-DPI display above 100% scale before release.**
+- **Always test on a high-DPI display above 100% scale before release** — the Store cert lab runs on a Surface Laptop 5 at 2256×1504, 150%.

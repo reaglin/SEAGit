@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 
@@ -6,38 +6,31 @@ namespace SEAGit.Services
 {
     public class GitProcessService
     {
+        /// <summary>
+        /// Path to the bundled Git for Windows launcher (MinGit). SEAGit ships
+        /// MinGit alongside the executable so users do not need a separate Git
+        /// install — and so the app does not have to direct users to a third-
+        /// party download, which violates Microsoft Store policy 10.1.5. The
+        /// cmd\git.exe wrapper sets up PATH/exec-path for the real binary at
+        /// mingw64\bin\git.exe.
+        /// </summary>
+        public static string GitExePath { get; } =
+            Path.Combine(AppContext.BaseDirectory, "MinGit", "cmd", "git.exe");
+
         public bool IsValidGitRepo(string path)
         {
             return Directory.Exists(Path.Combine(path, ".git"));
         }
 
         /// <summary>
-        /// True if Git for Windows is available (git --version succeeds). SEAGit
-        /// shells out to git.exe; when it is not installed Process.Start throws
-        /// Win32Exception ("The system cannot find the file specified"), which
-        /// previously surfaced as an unexpected-error crash during "initialize
-        /// repository". Used to warn the user up front and gate git actions.
+        /// True if the bundled MinGit component is present on disk. With Git
+        /// shipped inside the MSIX this is effectively always true, but the
+        /// check stays so a corrupted install can be reported cleanly rather
+        /// than throwing Win32Exception ("file not found") from Process.Start.
         /// </summary>
         public bool IsGitInstalled()
         {
-            try
-            {
-                var psi = new ProcessStartInfo("git", "--version")
-                {
-                    CreateNoWindow         = true,
-                    UseShellExecute        = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true
-                };
-                using var p = Process.Start(psi);
-                if (p == null) return false;
-                p.WaitForExit();
-                return p.ExitCode == 0;
-            }
-            catch
-            {
-                return false;
-            }
+            return File.Exists(GitExePath);
         }
 
         public string InitializeRepo(string targetDirectory)
@@ -98,7 +91,7 @@ namespace SEAGit.Services
 
         private string RunGitCommand(string workingDirectory, string arguments)
         {
-            var processInfo = new ProcessStartInfo("git", arguments)
+            var processInfo = new ProcessStartInfo(GitExePath, arguments)
             {
                 WorkingDirectory = workingDirectory,
                 CreateNoWindow = true,
@@ -111,7 +104,7 @@ namespace SEAGit.Services
             {
                 using (var process = Process.Start(processInfo))
                 {
-                    if (process == null) return "Error: Could not start the Git process.";
+                    if (process == null) return "Error: Could not start the bundled Git process.";
 
                     process.WaitForExit();
                     string output = process.StandardOutput.ReadToEnd();
@@ -123,12 +116,11 @@ namespace SEAGit.Services
             }
             catch (System.ComponentModel.Win32Exception)
             {
-                // git.exe could not be started — Git for Windows is not installed
-                // or not on the PATH. Return a clear, actionable message instead
-                // of letting the Win32Exception crash the app.
-                return "Error: Git for Windows is not installed (or not on the PATH). " +
-                       "SEAGit uses Git for Windows to publish your folders to GitHub. " +
-                       "Install it from https://gitforwindows.org/ and restart SEAGit.";
+                // The bundled git.exe could not be started — the MinGit component
+                // appears to be missing from the install. Surface a clean, internal
+                // message; do not link to a third-party download (Store policy 10.1.5).
+                return "Error: SEAGit's bundled Git component could not be started. " +
+                       "The MinGit files may be missing from the install. Please reinstall SEAGit.";
             }
         }
     }

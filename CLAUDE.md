@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-SEAGit (Super-Easy and Accessible Git) is a **.NET 8 WinForms desktop app for Windows** that lets non-technical users publish a local folder to GitHub with one click — no branching, staging, or command line. It drives the user's installed **Git for Windows** in the background; it does not bundle git.
+SEAGit (Super-Easy and Accessible Git) is a **.NET 8 WinForms desktop app for Windows** that lets non-technical users publish a local folder to GitHub with one click — no branching, staging, or command line. The app **bundles MinGit** (a Git for Windows redistributable, ~92 MB extracted, under `SEAGit/MinGit/`) and invokes it via `MinGit\cmd\git.exe`, so users don't need a separate Git install and the app never directs them to a third-party download (required by Microsoft Store policy 10.1.5).
 
 See `README.md` for the end-user walkthrough.
 
@@ -36,8 +36,9 @@ No test project exists — verification is manual through the UI. SEAGit require
 ## Architecture Notes
 
 - **No server, no database.** The only persisted state is the user's tracked-folder list, written locally by `StorageService`.
-- **All git work shells out** to the installed `git.exe` via `GitProcessService`. SEAGit does not implement git itself.
-- **GitHub authentication is delegated to Git Credential Manager** (the browser sign-in flow). SEAGit never stores GitHub tokens or passwords itself — keep it that way.
+- **All git work shells out** to the bundled `git.exe` via `GitProcessService`. The full path is `GitProcessService.GitExePath` = `AppContext.BaseDirectory + "MinGit\\cmd\\git.exe"`. Never call `"git"` from PATH — the user may not have it installed, and the bundled binary is what the Store certifies. SEAGit does not implement git itself.
+- **GitHub authentication is delegated to Git Credential Manager** (the browser sign-in flow). SEAGit never stores GitHub tokens or passwords itself — keep it that way. MinGit ships with git-credential-manager included.
+- **No third-party download links anywhere in the UI.** Store policy 10.1.5 forbids promoting acquisition of software not published by you. Don't reintroduce a "go download X" dialog or button. If the bundled Git is missing (corrupt install), surface a "reinstall SEAGit" message — never a link to gitforwindows.org or similar.
 
 ## Repository Hygiene — Keep Secrets Out of Git
 

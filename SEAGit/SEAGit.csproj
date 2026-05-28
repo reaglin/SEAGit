@@ -21,6 +21,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- MinGit (Git for Windows redistributable) is bundled so SEAGit ships
+         with Git and does not direct users to a third-party download — Store
+         policy 10.1.5. The full tree is copied next to the executable; the
+         launcher at MinGit\cmd\git.exe sets up the environment for mingw64. -->
+    <Content Include="MinGit\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

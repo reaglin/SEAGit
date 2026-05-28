@@ -37,14 +37,13 @@ namespace SEAGit
             _repositories = new List<GitRepository>();
         }
 
-        private bool _gitCheckDone;
-
         private void MainForm_Load(object sender, EventArgs e)
         {
             // Keep launch resilient: any failure here is logged and surfaced, but
             // never allowed to escape and terminate the app before the window is
-            // shown. The Git-for-Windows check is deferred to OnShown so the main
-            // window paints first (see below).
+            // shown. Git is bundled with the app (MinGit under the install folder),
+            // so there is no longer a startup check that talks the user through
+            // installing it — see GitProcessService.GitExePath.
             try
             {
                 _repositories = _storageService.LoadRepositories();
@@ -61,66 +60,23 @@ namespace SEAGit
             }
         }
 
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
-
-            // Run the Git-for-Windows check only AFTER the main window is painted,
-            // so the app visibly launches before any modal dialog appears. The
-            // Store cert lab runs on a machine with no Git installed; showing this
-            // dialog from Load — before the window was drawn — made the app look
-            // like it failed to launch. SEAGit drives Git for Windows, so if it is
-            // missing we tell the user up front rather than failing later.
-            if (_gitCheckDone) return;
-            _gitCheckDone = true;
-
-            try
-            {
-                if (!_gitService.IsGitInstalled())
-                {
-                    LogMessage("⚠ Git for Windows was not found. SEAGit needs it to publish folders to " +
-                               "GitHub. Install it free from https://gitforwindows.org/, then restart SEAGit.");
-                    ShowGitRequiredDialog();
-                }
-            }
-            catch (Exception ex)
-            {
-                LogMessage("Could not check for Git for Windows: " + ex.Message);
-            }
-        }
-
         /// <summary>
-        /// Returns true if Git for Windows is available; otherwise shows the
-        /// "Git for Windows required" dialog and returns false. Call before any
-        /// action that shells out to git.
+        /// Returns true if SEAGit's bundled Git component is present; otherwise
+        /// shows a "bundled component missing — please reinstall SEAGit" message
+        /// and returns false. Called before any action that shells out to git.
+        /// Does not link to a third-party download (Store policy 10.1.5); Git is
+        /// shipped inside the MSIX, so a missing exe means the install is broken.
         /// </summary>
         private bool EnsureGitOrWarn()
         {
             if (_gitService.IsGitInstalled()) return true;
-            ShowGitRequiredDialog();
+
+            MessageBox.Show(
+                "SEAGit's bundled Git component appears to be missing from the install.\n\n" +
+                "Please reinstall SEAGit from the Microsoft Store to restore it.",
+                "SEAGit — Bundled Component Missing",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return false;
-        }
-
-        private void ShowGitRequiredDialog()
-        {
-            var choice = MessageBox.Show(
-                "Git for Windows is required.\n\n" +
-                "SEAGit publishes your folders to GitHub using Git for Windows, which does not " +
-                "appear to be installed on this PC.\n\n" +
-                "Install Git for Windows (it is free), then restart SEAGit.\n\n" +
-                "Open the Git for Windows download page now?",
-                "SEAGit — Git for Windows Required",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-
-            if (choice == DialogResult.Yes)
-                OpenUrl("https://gitforwindows.org/");
-        }
-
-        private static void OpenUrl(string url)
-        {
-            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch { /* nothing useful to do if the browser cannot be opened */ }
         }
 
         private void BtnAddRepo_Click(object sender, EventArgs e)

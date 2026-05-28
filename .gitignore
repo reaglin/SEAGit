@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# --- Bundled MinGit override ----------------------------------------------
+# MinGit (Git for Windows redistributable) ships inside the MSIX. Its
+# mingw64/bin and usr/bin directories must NOT be caught by the generic
+# [Bb]in/ rule above, or the actual git.exe and the git-credential-manager
+# binaries are silently dropped from the commit. These negations MUST come
+# after [Bb]in/ — gitignore negations only override prior rules.
+!/SEAGit/MinGit/mingw64/bin/
+!/SEAGit/MinGit/usr/bin/

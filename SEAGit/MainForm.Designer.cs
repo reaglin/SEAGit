@@ -116,8 +116,8 @@
             this.txtLog.Text = "";
             
             // MainForm
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            // No AutoScaleMode here: DpiAwareForm sets the 96-DPI baseline and scales in OnLoad. A
+            // designer Font baseline as well scaled the window twice, and it opened 136 x 113.
             this.ClientSize = new System.Drawing.Size(534, 475);
             this.Controls.Add(this.lblLog);
             this.Controls.Add(this.lblRepos);

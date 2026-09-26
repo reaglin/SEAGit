@@ -9,6 +9,9 @@
         private System.Windows.Forms.RichTextBox txtLog;
         private System.Windows.Forms.Label lblRepos;
         private System.Windows.Forms.Label lblLog;
+        private System.Windows.Forms.MenuStrip menuMain;
+        private System.Windows.Forms.ToolStripMenuItem mnuHelp;
+        private System.Windows.Forms.ToolStripMenuItem mnuAbout;
 
         protected override void Dispose(bool disposing)
         {
@@ -27,10 +30,31 @@
             this.txtLog = new System.Windows.Forms.RichTextBox();
             this.lblRepos = new System.Windows.Forms.Label();
             this.lblLog = new System.Windows.Forms.Label();
+            this.menuMain = new System.Windows.Forms.MenuStrip();
+            this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuAbout = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuMain.SuspendLayout();
             this.SuspendLayout();
+
+            // menuMain
+            this.menuMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuHelp });
+            this.menuMain.Location = new System.Drawing.Point(0, 0);
+            this.menuMain.Name = "menuMain";
+            this.menuMain.Size = new System.Drawing.Size(534, 24);
+            this.menuMain.TabIndex = 6;
+
+            // mnuHelp
+            this.mnuHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuAbout });
+            this.mnuHelp.Name = "mnuHelp";
+            this.mnuHelp.Text = "&Help";
+
+            // mnuAbout
+            this.mnuAbout.Name = "mnuAbout";
+            this.mnuAbout.Text = "&About SEAGit";
+            this.mnuAbout.Click += new System.EventHandler(this.MnuAbout_Click);
             
             // btnAddRepo
-            this.btnAddRepo.Location = new System.Drawing.Point(12, 12);
+            this.btnAddRepo.Location = new System.Drawing.Point(12, 36);
             this.btnAddRepo.Name = "btnAddRepo";
             this.btnAddRepo.Size = new System.Drawing.Size(150, 40);
             this.btnAddRepo.TabIndex = 0;
@@ -44,7 +68,7 @@
             this.btnPublish.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPublish.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.btnPublish.ForeColor = System.Drawing.Color.White;
-            this.btnPublish.Location = new System.Drawing.Point(372, 12);
+            this.btnPublish.Location = new System.Drawing.Point(372, 36);
             this.btnPublish.Name = "btnPublish";
             this.btnPublish.Size = new System.Drawing.Size(150, 40);
             this.btnPublish.TabIndex = 1;
@@ -54,7 +78,7 @@
             
             // lblRepos
             this.lblRepos.AutoSize = true;
-            this.lblRepos.Location = new System.Drawing.Point(12, 65);
+            this.lblRepos.Location = new System.Drawing.Point(12, 89);
             this.lblRepos.Name = "lblRepos";
             this.lblRepos.Size = new System.Drawing.Size(103, 15);
             this.lblRepos.TabIndex = 4;
@@ -65,14 +89,14 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstRepos.FormattingEnabled = true;
             this.lstRepos.ItemHeight = 15;
-            this.lstRepos.Location = new System.Drawing.Point(12, 85);
+            this.lstRepos.Location = new System.Drawing.Point(12, 109);
             this.lstRepos.Name = "lstRepos";
             this.lstRepos.Size = new System.Drawing.Size(510, 154);
             this.lstRepos.TabIndex = 2;
             
             // lblLog
             this.lblLog.AutoSize = true;
-            this.lblLog.Location = new System.Drawing.Point(12, 255);
+            this.lblLog.Location = new System.Drawing.Point(12, 279);
             this.lblLog.Name = "lblLog";
             this.lblLog.Size = new System.Drawing.Size(76, 15);
             this.lblLog.TabIndex = 5;
@@ -84,7 +108,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtLog.BackColor = System.Drawing.Color.Black;
             this.txtLog.ForeColor = System.Drawing.Color.LightGray;
-            this.txtLog.Location = new System.Drawing.Point(12, 275);
+            this.txtLog.Location = new System.Drawing.Point(12, 299);
             this.txtLog.Name = "txtLog";
             this.txtLog.ReadOnly = true;
             this.txtLog.Size = new System.Drawing.Size(510, 160);
@@ -94,17 +118,21 @@
             // MainForm
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(534, 451);
+            this.ClientSize = new System.Drawing.Size(534, 475);
             this.Controls.Add(this.lblLog);
             this.Controls.Add(this.lblRepos);
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.lstRepos);
             this.Controls.Add(this.btnPublish);
             this.Controls.Add(this.btnAddRepo);
-            this.MinimumSize = new System.Drawing.Size(400, 400);
+            this.Controls.Add(this.menuMain);
+            this.MainMenuStrip = this.menuMain;
+            this.MinimumSize = new System.Drawing.Size(400, 424);
             this.Name = "MainForm";
             this.Text = "SEAGit - Super-Easy And Accessible Git";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.menuMain.ResumeLayout(false);
+            this.menuMain.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

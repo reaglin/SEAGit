@@ -218,6 +218,12 @@ namespace SEAGit
             }
         }
 
+        private void MnuAbout_Click(object? sender, EventArgs e)
+        {
+            using var about = new AboutForm();
+            about.ShowDialog(this);
+        }
+
         private void RefreshRepoList()
         {
             lstRepos.DataSource = null;

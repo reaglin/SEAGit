@@ -14,6 +14,9 @@
     <!-- Enables restore/publish for the win-x64 self-contained MSIX build.
          Does not change the default framework-dependent build. -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!-- Shown in Help > About. Keep it matching the Store package version in
+         WapProjTemplate/Package.appxmanifest (1.0.5.0). -->
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,6 +49,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Images\dr-ron-eaglin.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="seagit.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

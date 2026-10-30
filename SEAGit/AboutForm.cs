@@ -32,7 +32,7 @@ namespace SEAGit
             var layout = new TableLayoutPanel
             {
                 ColumnCount = 2,
-                RowCount = 3,
+                RowCount = 4,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 Dock = DockStyle.Fill,
@@ -99,6 +99,22 @@ namespace SEAGit
                 Margin = new Padding(0, 0, 0, 16),
             };
 
+            // Links (portfolio rules, 2026-09-30 and 2026-10-30): the program's page, its Store page, all the programs.
+            var links = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = false,
+                Margin = new Padding(0, 0, 0, 16),
+            };
+            links.Controls.Add(MakeLink("More about SEAGit, with help and examples: ",
+                "softwareplus.ai/seagit", "https://softwareplus.ai/seagit/"));
+            links.Controls.Add(MakeLink("SEAGit on the Microsoft Store (updates, ratings and reviews): ",
+                "apps.microsoft.com/detail/9P7Z72K774JN", "https://apps.microsoft.com/detail/9P7Z72K774JN"));
+            links.Controls.Add(MakeLink("All of Dr. Ron Eaglin's programs: ",
+                "softwareplus.ai", "https://softwareplus.ai/#programs"));
+
             var close = new Button
             {
                 Text = "Close",
@@ -113,7 +129,9 @@ namespace SEAGit
             layout.Controls.Add(headingStack, 1, 0);
             layout.Controls.Add(description, 0, 1);
             layout.SetColumnSpan(description, 2);
-            layout.Controls.Add(close, 0, 2);
+            layout.Controls.Add(links, 0, 2);
+            layout.SetColumnSpan(links, 2);
+            layout.Controls.Add(close, 0, 3);
             layout.SetColumnSpan(close, 2);
 
             Controls.Add(layout);
@@ -126,6 +144,41 @@ namespace SEAGit
         {
             Version? v = Assembly.GetExecutingAssembly().GetName().Version;
             return v == null ? "unknown" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+
+        /// <summary>
+        /// One line of text ending in a link. Tab reaches it; Enter or Space opens the address in
+        /// the person's web browser. SEAGit itself makes no connection.
+        /// </summary>
+        private LinkLabel MakeLink(string lead, string linkText, string url)
+        {
+            var label = new LinkLabel
+            {
+                Text = lead + linkText,
+                AutoSize = true,
+                MaximumSize = new Size(440, 0),
+                Margin = new Padding(0, 0, 0, 4),
+                TabStop = true,
+                AccessibleName = lead + linkText,
+                AccessibleDescription = "Opens " + url + " in your web browser",
+            };
+            label.LinkArea = new LinkArea(lead.Length, linkText.Length);
+            label.Links[0].LinkData = url;
+            label.LinkClicked += (_, e) =>
+            {
+                string address = (string)e.Link!.LinkData!;
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(address) { UseShellExecute = true });
+                    e.Link.Visited = true;
+                }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+                {
+                    MessageBox.Show(this, "Windows could not open a web browser. The address is " + address,
+                        "About SEAGit", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+            return label;
         }
 
         private static Region RoundedRegion(Size size, int radius)

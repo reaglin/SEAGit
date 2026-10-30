@@ -10,7 +10,7 @@ See `README.md` for the end-user walkthrough.
 
 ```
 SEAGit.sln
-├── SEAGit/                — WinForms app (net8.0-windows)
+├── SEAGit/                — WinForms app (net8.0-windows10.0.19041.0, for the Store update API)
 │   ├── MainForm.cs        — the single application window
 │   ├── Models/            — GitRepository (a tracked local folder + its remote)
 │   ├── Services/

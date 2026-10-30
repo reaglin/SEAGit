@@ -218,6 +218,11 @@ namespace SEAGit
             }
         }
 
+        private async void MnuCheckUpdates_Click(object? sender, EventArgs e)
+        {
+            await StoreUpdates.CheckAsync(this);
+        }
+
         private void MnuAbout_Click(object? sender, EventArgs e)
         {
             using var about = new AboutForm();

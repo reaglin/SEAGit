@@ -11,6 +11,7 @@
         private System.Windows.Forms.Label lblLog;
         private System.Windows.Forms.MenuStrip menuMain;
         private System.Windows.Forms.ToolStripMenuItem mnuHelp;
+        private System.Windows.Forms.ToolStripMenuItem mnuCheckUpdates;
         private System.Windows.Forms.ToolStripMenuItem mnuAbout;
 
         protected override void Dispose(bool disposing)
@@ -32,6 +33,7 @@
             this.lblLog = new System.Windows.Forms.Label();
             this.menuMain = new System.Windows.Forms.MenuStrip();
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuCheckUpdates = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.menuMain.SuspendLayout();
             this.SuspendLayout();
@@ -44,9 +46,15 @@
             this.menuMain.TabIndex = 6;
 
             // mnuHelp
-            this.mnuHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuAbout });
+            this.mnuHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuCheckUpdates, this.mnuAbout });
             this.mnuHelp.Name = "mnuHelp";
             this.mnuHelp.Text = "&Help";
+
+            // mnuCheckUpdates
+            this.mnuCheckUpdates.Name = "mnuCheckUpdates";
+            this.mnuCheckUpdates.Text = "Check for a &new version…";
+            this.mnuCheckUpdates.ToolTipText = "Asks the Microsoft Store whether a newer version of SEAGit is out, and offers to install it";
+            this.mnuCheckUpdates.Click += new System.EventHandler(this.MnuCheckUpdates_Click);
 
             // mnuAbout
             this.mnuAbout.Name = "mnuAbout";

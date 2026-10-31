@@ -31,7 +31,7 @@ dotnet build SEAGit.sln
 dotnet run --project SEAGit/SEAGit.csproj
 ```
 
-No test project exists — verification is manual through the UI. SEAGit requires Git for Windows to be installed on the machine.
+Tests: `dotnet test SEAGit.Tests -c Release` (added 2026-10-31; drives the bundled MinGit against temporary local bare repositories, no network; not in the .sln because the .sln holds the packaging project). The UI is checked by Ron's hand-test in `docs/MANUAL-TESTING.md`. Git is built in (MinGit); nothing else needs installing. Plan: `docs/DEVELOPMENT-PLAN.md`; usability rules: `C:\Users\ronal\source\repos\USABILITY-CHECKLIST.md`.
 
 ## Architecture Notes
 

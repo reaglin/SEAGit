@@ -10,15 +10,25 @@
 # there was none). Nothing is published to GitHub: the throwaway folders under -Work have a GitHub address, but
 # `url.<local bare repo>.pushInsteadOf` sends their pushes to local bare repositories (see -Work's layout below).
 #
-# -Work holds folders\my-cool-website (prepared, linked, empty bare remote), folders\class-notes (not prepared),
+# -Work (or -FolderRoot) holds folders\my-cool-website (prepared, linked, empty bare remote), folders\class-notes (not prepared),
 # folders\big-video (prepared, linked, a 110 MB file) and folders\old-project (prepared, linked, bare remote that
 # already has a README commit), made by hand before this runs.
 param(
     [string]$Exe = "",
     [Parameter(Mandatory = $true)][string]$Work,
-    [Parameter(Mandatory = $true)][string]$OutDir
+    [Parameter(Mandatory = $true)][string]$OutDir,
+    # Where the four throwaway folders are (their path shows in the pictures, so give it plain names), and their names:
+    # prepared + linked + empty remote; not prepared; prepared + linked with a 110 MB file; linked to a remote with a README.
+    [string]$FolderRoot = "",
+    [string]$Site = 'my-cool-website',
+    [string]$New = 'class-notes',
+    [string]$Big = 'big-video',
+    [string]$Old = 'old-project',
+    # Only the Help menu, Help for this screen and About (the folders may already have been published).
+    [switch]$HelpOnly
 )
 
+if (-not $FolderRoot) { $FolderRoot = Join-Path $Work 'folders' }
 if (-not $Exe) { $Exe = Join-Path $PSScriptRoot '..\manual-test\SEAGit.exe' }
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Drawing
@@ -199,6 +209,20 @@ function Select-Folder($main, [string]$folder) {
     throw "list item not found: $folder"
 }
 
+# Opens the Help menu; a menu drop-down closes at once unless its window is in front, so it is tried a few times.
+function Open-HelpMenu($app, $help) {
+    $id = $app.Process.Id
+    for ($try = 0; $try -lt 5; $try++) {
+        $drop = Get-Windows $id | Where-Object { $_.Handle -ne $app.Window.Handle -and $_.Class -like 'WindowsForms*' } | Select-Object -First 1
+        if ($drop) { return $drop }
+        [MsaaButton]::SetForegroundWindow($app.Window.Handle) | Out-Null
+        Start-Sleep -Milliseconds 400
+        $help.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+        Start-Sleep -Milliseconds 900
+    }
+    return $null
+}
+
 function Start-SEAGit {
     $p = Start-Process -FilePath $Exe -PassThru
     $w = Wait-Window $p.Id { $_.Title -like 'SEAGit — Super-Easy*' }
@@ -227,67 +251,67 @@ try {
     Stop-SEAGit $app; $app = $null
 
     # 2. A list of four throwaway folders.
-    $folders = 'my-cool-website', 'class-notes', 'big-video', 'old-project' | ForEach-Object {
-        [ordered]@{ Name = $_; LocalPath = (Join-Path $Work "folders\$_"); LastPublished = '0001-01-01T00:00:00' }
+    $folders = $Site, $New, $Big, $Old | ForEach-Object {
+        [ordered]@{ Name = $_; LocalPath = (Join-Path $FolderRoot $_); LastPublished = '0001-01-01T00:00:00' }
     }
     New-Item -ItemType Directory -Force $listDir | Out-Null
     ConvertTo-Json @($folders) | Set-Content -Path $list -Encoding utf8
     $app = Start-SEAGit
     $id = $app.Process.Id; $main = $app.Root
 
-    # First publish of a prepared, linked folder: the count question, then the result.
-    Select-Folder $main 'my-cool-website'
-    Press $main 'Publish Selected'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-first-question.png'
-    Answer-Box $id $box 'Yes'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-done.png'
-    Answer-Box $id $box 'OK'
+    if (-not $HelpOnly) {
+        # First publish of a prepared, linked folder: the count question, then the result.
+        Select-Folder $main $Site
+        Press $main 'Publish Selected'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-first-question.png'
+        Answer-Box $id $box 'Yes'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-done.png'
+        Answer-Box $id $box 'OK'
 
-    # Publish again: nothing has changed.
-    Press $main 'Publish Selected'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-nothing.png'
-    Answer-Box $id $box 'OK'
+        # Publish again: nothing has changed.
+        Press $main 'Publish Selected'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-nothing.png'
+        Answer-Box $id $box 'OK'
 
-    # The main window with its folders and the Activity Log of that publish.
-    Save-Shot $app.Window.Handle 'main-folders.png'
+        # The main window with its folders and the Activity Log of that publish.
+        Save-Shot $app.Window.Handle 'main-folders.png'
 
-    # A folder SEAGit has not used: the prepare question, then the GitHub address window (cancelled).
-    Select-Folder $main 'class-notes'
-    Press $main 'Publish Selected'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'prepare-question.png'
-    Answer-Box $id $box 'Yes'
-    $addr = Wait-Window $id { $_.Title -eq 'SEAGit — Link to GitHub' }
-    Save-Shot $addr.Handle 'address-window.png'
-    $ae = Get-Element $addr.Handle
-    $edit = Find-Element $ae 'GitHub repository address' $CT::Edit
-    $edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('github.com/your-name')
-    Press $ae 'Link and Publish'
-    Start-Sleep -Milliseconds 900
-    Save-Shot $addr.Handle 'address-window-problem.png'
-    Start-Sleep -Milliseconds 3000
-    Save-Shot $addr.Handle 'address-window-problem-later.png'
-    Answer-Box $id $addr 'Cancel'
+        # A folder SEAGit has not used: the prepare question, then the GitHub address window (cancelled).
+        Select-Folder $main $New
+        Press $main 'Publish Selected'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'prepare-question.png'
+        Answer-Box $id $box 'Yes'
+        $addr = Wait-Window $id { $_.Title -eq 'SEAGit — Link to GitHub' }
+        Save-Shot $addr.Handle 'address-window.png'
+        $ae = Get-Element $addr.Handle
+        $edit = Find-Element $ae 'GitHub repository address' $CT::Edit
+        $edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('github.com/your-name')
+        Press $ae 'Link and Publish'
+        Start-Sleep -Milliseconds 900
+        Save-Shot $addr.Handle 'address-window-problem.png'
+        Start-Sleep -Milliseconds 3000
+        Save-Shot $addr.Handle 'address-window-problem-later.png'
+        Answer-Box $id $addr 'Cancel'
 
-    # A file over 100 MB stops the publish before anything is saved.
-    Select-Folder $main 'big-video'
-    Press $main 'Publish Selected'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-too-big.png'
-    Answer-Box $id $box 'OK'
+        # A file over 100 MB stops the publish before anything is saved.
+        Select-Folder $main $Big
+        Press $main 'Publish Selected'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-too-big.png'
+        Answer-Box $id $box 'OK'
 
-    # A GitHub repository that already has a README: refused.
-    Select-Folder $main 'old-project'
-    Press $main 'Publish Selected'
-    $box = Wait-MessageBox $id; Answer-Box $id $box 'Yes'
-    $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-refused.png'
-    Answer-Box $id $box 'OK'
+        # A GitHub repository that already has a README: refused.
+        Select-Folder $main $Old
+        Press $main 'Publish Selected'
+        $box = Wait-MessageBox $id; Answer-Box $id $box 'Yes'
+        $box = Wait-MessageBox $id; Save-Shot $box.Handle 'publish-refused.png'
+        Answer-Box $id $box 'OK'
 
-    Select-Folder $main 'my-cool-website'
+        Select-Folder $main $Site
+    }
 
     # The Help menu, open: the main window with the drop-down drawn over it.
     $help = Find-Element $main 'Help' $CT::MenuItem
-    $help.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
-    Start-Sleep -Milliseconds 900
-    $drop = Get-Windows $id | Where-Object { $_.Handle -ne $app.Window.Handle -and $_.Class -like 'WindowsForms*' } | Select-Object -First 1
+    $drop = Open-HelpMenu $app $help
     if ($drop) {
         $m = Get-Bitmap $app.Window.Handle
         $d = Get-Bitmap $drop.Handle
@@ -302,14 +326,14 @@ try {
     } else { Write-Output "Help menu drop-down not found" }
 
     # Help ▸ Help for this screen (F1).
+    Open-HelpMenu $app $help | Out-Null
     Invoke-Async (Find-Element $main 'Help for this screen' $CT::MenuItem)
     $hw = Wait-Window $id { $_.Title -eq 'SEAGit — Help for this screen' }
     Save-Shot $hw.Handle 'help-for-this-screen.png'
     Answer-Box $id $hw 'Close'
 
     # Help ▸ About SEAGit…
-    $help.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
-    Start-Sleep -Milliseconds 600
+    Open-HelpMenu $app $help | Out-Null
     Invoke-Async (Find-Element $main 'About SEAGit…' $CT::MenuItem)
     $ab = Wait-Window $id { $_.Title -eq 'About SEAGit' }
     Save-Shot $ab.Handle 'about.png'

@@ -95,6 +95,13 @@ B11. *(UX review fixes)* With a folder that has never been published, use Change
     are not in this folder … edited on github.com …" (not "make a new repository"). Remove a published folder and add it
     again — its "last published" date comes back. Answer No to "Prepare it for publishing?" — the log says it was not
     added. With an empty list the box says "No folders yet …"; clicking it opens the folder chooser.
+B12. *(1.15, long paths and the idle line)* Add a folder with a long place, e.g. `C:\Users\Public\Documents\SEAGit example\My class website`.
+    Expected: its row fits the list, the middle of the place replaced by "…" (the folder's own name stays at the end), and
+    there is no sideways scrollbar. Rest the mouse on the row — the tooltip shows the full place. Make the window wider and
+    narrower — the rows re-fit. Open Folder (and double-click) opens the right folder. With an empty list the bold line
+    under the buttons says "Ready. Press + Add Local Folder… to start."; with folders, "Ready. Select a folder, then press
+    Publish Selected."; while publishing it says what SEAGit is doing, and "Ready …" comes back when it has finished.
+    Also at 150 %: nothing cut off.
 
 ### C. Every screen (USABILITY-CHECKLIST.md 1–4)
 

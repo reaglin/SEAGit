@@ -100,6 +100,32 @@ namespace SEAGit.Services
             !string.IsNullOrEmpty(b) &&
             string.Equals(a, Path.TrimEndingDirectorySeparator(b), StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Shortens text to fit a width by putting "…" in the middle, keeping more of the end (for a folder path, the
+        /// end is the folder's own name): "C:\Users\you\Doc…\My class website". Unchanged when it fits; "…" when nothing fits.
+        /// </summary>
+        /// <param name="measure">The width of a string, in the same units as <paramref name="maxWidth"/>.</param>
+        public static string ShortenMiddle(string text, int maxWidth, Func<string, int> measure)
+        {
+            text ??= "";
+            if (measure(text) <= maxWidth) return text;
+            const string dots = "…";
+            string Keep(int k)
+            {
+                int back = (k * 3 + 4) / 5; // about 60 % from the end
+                int front = k - back;
+                return text.Substring(0, front) + dots + text.Substring(text.Length - back);
+            }
+            int lo = 0, hi = text.Length - 1; // the most characters kept that still fit
+            if (measure(Keep(0)) > maxWidth) return dots;
+            while (lo < hi)
+            {
+                int mid = (lo + hi + 1) / 2;
+                if (measure(Keep(mid)) <= maxWidth) lo = mid; else hi = mid - 1;
+            }
+            return Keep(lo);
+        }
+
         /// <summary>"12.3 MB", "640 KB", "17 bytes".</summary>
         public static string Size(long bytes)
         {

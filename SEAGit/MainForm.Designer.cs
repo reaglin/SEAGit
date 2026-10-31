@@ -137,7 +137,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstRepos.AccessibleName = "Your folders";
             this.lstRepos.FormattingEnabled = true;
-            this.lstRepos.HorizontalScrollbar = true;
+            this.lstRepos.HorizontalScrollbar = false; // long paths are shortened in the middle instead (UX review 2026-10-31)
             this.lstRepos.IntegralHeight = false;
             this.lstRepos.Location = new System.Drawing.Point(12, 160);
             this.lstRepos.Name = "lstRepos";

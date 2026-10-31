@@ -63,8 +63,16 @@ namespace SEAGit
                 "folder it has not used before. Nothing is sent to GitHub until you press Publish Selected.");
             _tips.SetToolTip(btnPublish, "Copies the selected folder's changes to its GitHub repository. The first time, it asks " +
                 "for the GitHub repository's address, and you sign in to GitHub in your browser.");
-            _tips.SetToolTip(lstRepos, "Your folders: each one's name, when it was last published, and where it is on this " +
-                "computer. Select one, then use the buttons. Double-click one to open it.");
+            _tips.SetToolTip(lstRepos, ListTip);
+            lstRepos.MouseMove += LstRepos_MouseMove;
+            lstRepos.MouseLeave += (_, _) => ShowListTip(ListTip);
+            lstRepos.SizeChanged += (_, _) =>
+            {
+                // The path part of each row is shortened to the list's width, so a new width re-formats the rows.
+                if (lstRepos.ClientSize.Width == _formattedWidth) return;
+                _formattedWidth = lstRepos.ClientSize.Width;
+                RefreshRepoList();
+            };
             _tips.SetToolTip(btnOpenFolder, "Opens the selected folder in File Explorer, so you can add or change its files.");
             _tips.SetToolTip(btnChangeAddress, "Publishes the selected folder to a different GitHub repository from now on. " +
                 "Nothing already on GitHub is changed or deleted.");
@@ -497,7 +505,8 @@ namespace SEAGit
             lstRepos.Enabled = !busy;
             btnPublish.Text = busy && status.StartsWith("Publishing", StringComparison.Ordinal) ? "Publishing…" : "&Publish Selected";
             // Disabled buttons cannot show a tooltip in WinForms, so the status line says why they are off (checklist 2.3).
-            lblStatus.Text = busy && status.Length > 0 ? status + " The buttons come back when SEAGit has finished." : status;
+            lblStatus.Text = !busy ? IdleStatus()
+                : status.Length > 0 ? status + " The buttons come back when SEAGit has finished." : "";
             UseWaitCursor = false;
             Cursor = busy ? Cursors.AppStarting : Cursors.Default;
         }
@@ -510,6 +519,7 @@ namespace SEAGit
             lstRepos.DisplayMember = nameof(GitRepository.Name);
             if (selected != null && _repositories.Contains(selected)) lstRepos.SelectedItem = selected;
             _emptyList.Visible = _repositories.Count == 0;
+            if (!_busy) lblStatus.Text = IdleStatus();
         }
 
         /// <summary>Shown over the empty list, so it is never a blank white box (usability checklist 1.4).</summary>
@@ -532,12 +542,47 @@ namespace SEAGit
             _emptyList.BringToFront();
         }
 
+        private const string ListTip = "Your folders: each one's name, when it was last published, and where it is on this " +
+            "computer. Select one, then use the buttons. Double-click one to open it.";
+
+        private int _formattedWidth = -1;
+        private string _shownListTip = ListTip;
+
+        /// <summary>
+        /// One row: name, when it was last published, and where it is. A long place is shortened in the middle to fit
+        /// the list's width (no sideways scrolling); the row's tooltip and Open Folder use the full place.
+        /// </summary>
         private void LstRepos_Format(object? sender, ListControlConvertEventArgs e)
         {
             if (e.ListItem is not GitRepository repo) return;
             string dateStr = repo.LastPublished == DateTime.MinValue ? "never published" : "last published " + repo.LastPublished.ToString("g");
-            e.Value = $"{repo.Name}   —   {dateStr}   —   {repo.LocalPath}";
+            string head = $"{repo.Name}   —   {dateStr}   —   ";
+            int Measure(string s) => TextRenderer.MeasureText(s, lstRepos.Font, System.Drawing.Size.Empty,
+                TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix).Width;
+            int room = lstRepos.ClientSize.Width - 8 - Measure(head);
+            e.Value = head + PlainWords.ShortenMiddle(repo.LocalPath, room, Measure);
         }
+
+        /// <summary>Over a row, the tooltip gives that folder's full place on this computer.</summary>
+        private void LstRepos_MouseMove(object? sender, MouseEventArgs e)
+        {
+            int i = lstRepos.IndexFromPoint(e.Location);
+            ShowListTip(i >= 0 && i < _repositories.Count
+                ? $"{_repositories[i].Name}\n{_repositories[i].LocalPath}\nDouble-click to open it in File Explorer."
+                : ListTip);
+        }
+
+        private void ShowListTip(string tip)
+        {
+            if (tip == _shownListTip) return;
+            _shownListTip = tip;
+            _tips.SetToolTip(lstRepos, tip);
+        }
+
+        /// <summary>What the status line says when SEAGit is not working, so it is never a blank gap.</summary>
+        private string IdleStatus() => _repositories.Count == 0
+            ? "Ready. Press + Add Local Folder… to start."
+            : "Ready. Select a folder, then press Publish Selected.";
 
         private void LogMessage(string message)
         {

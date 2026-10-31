@@ -30,6 +30,35 @@ public class PlainWordsTests
     }
 
     [Fact]
+    public void A_path_that_fits_is_not_shortened()
+    {
+        const string path = @"C:\Users\Public\Documents\Lab reports";
+        Assert.Equal(path, PlainWords.ShortenMiddle(path, path.Length, s => s.Length));
+    }
+
+    [Theory]
+    [InlineData(30)]
+    [InlineData(20)]
+    [InlineData(12)]
+    public void A_long_path_is_shortened_in_the_middle_and_keeps_its_end(int width)
+    {
+        const string path = @"C:\Users\Public\Documents\SEAGit example\My class website";
+        string shown = PlainWords.ShortenMiddle(path, width, s => s.Length);
+        Assert.Equal(width, shown.Length);          // as much as fits
+        Assert.Contains("…", shown);
+        Assert.StartsWith("C:", shown);
+        Assert.EndsWith("site", shown);             // more of the end (the folder's own name) is kept
+        int dot = shown.IndexOf('…');
+        Assert.True(shown.Length - dot - 1 >= dot, "the end keeps at least as much as the start");
+    }
+
+    [Fact]
+    public void A_width_with_no_room_shows_only_the_dots()
+    {
+        Assert.Equal("…", PlainWords.ShortenMiddle(@"C:\folder", 0, s => s.Length));
+    }
+
+    [Fact]
     public void A_large_file_named_403_is_still_explained_as_a_large_file()
     {
         Assert.Contains("over 100 MB", PlainWords.ExplainGitError("remote: error: GH001: Large files detected. File video-403.mp4 is 120 MB"));

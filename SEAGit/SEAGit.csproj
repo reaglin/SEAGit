@@ -21,8 +21,8 @@
          Does not change the default framework-dependent build. -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <!-- Shown in Help > About. Keep it matching the Store package version in
-         WapProjTemplate/Package.appxmanifest (1.0.5.0). -->
-    <Version>1.0.5</Version>
+         WapProjTemplate/Package.appxmanifest (1.0.6.0). -->
+    <Version>1.0.6</Version>
   </PropertyGroup>
 
   <ItemGroup>

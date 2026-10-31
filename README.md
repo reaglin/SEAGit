@@ -19,7 +19,7 @@ Before using SEAGit, you need two things:
 
 1. **A GitHub Account:** Go to [GitHub.com](https://github.com/) and create a free account. Your files need a home in the cloud!
 
-2. **Git for Windows:** Download and install [Git for Windows](https://gitforwindows.org/). You can just click "Next" through the default installer options. SEAGit uses this engine quietly in the background.
+2. **Nothing else.** Git comes built into SEAGit; you do not need to install it.
 
 ### Step 2: Create a Home for Your Files on GitHub
 
@@ -43,15 +43,15 @@ Before using SEAGit, you need two things:
 
 1. Open the SEAGit application.
 
-2. Click **"+ Add Local Folder"** and select the folder you created in Step 3. SEAGit will automatically prepare it for you.
+2. Click **"+ Add Local Folder…"** and select the folder you created in Step 3. The first time, SEAGit asks before it prepares the folder for publishing. (It will not publish a whole drive or your whole user folder.)
 
 3. Select your folder from the list and click **"Publish Selected"**.
 
-4. **The Link:** If this is your first time publishing this folder, SEAGit will ask for your GitHub URL. Paste the link you copied in Step 2.
+4. **The Link:** If this is your first time publishing this folder, SEAGit asks for your GitHub repository address. Paste the link you copied in Step 2 (it must start with `https://github.com/`). SEAGit then tells you how many files will be published, so you can check nothing private is in the folder. Files over 100 MB cannot go to GitHub.
 
 5. **The Login:** A secure Windows pop-up will appear asking you to "Sign in with your browser." Click it, log into GitHub, and authorize. You usually only have to do this once!
 
-That's it! Your status log will say "Successfully pushed," and your files are safely on GitHub. Next time you make changes to your files, just open SEAGit and click "Publish"—no URLs or logins required.
+That's it! SEAGit says "Published N files to GitHub." and your files are safely on GitHub. Next time you make changes to your files, just open SEAGit and click "Publish Selected" — no address or sign-in needed. If something goes wrong (no internet, sign-in not finished, a GitHub repository that is not empty), SEAGit says so in plain words and what to do; whatever was not sent is sent the next time you press Publish Selected. Use **Change GitHub Address…** if the address was wrong, **Remove from List** to take a folder off the list (your files are not deleted), and **Help ▸ Help for this screen** (F1) for help.
 
 ---
 
@@ -65,7 +65,7 @@ If you pushed HTML files (like an `index.html`):
 
 3. On the left sidebar, click **"Pages"**.
 
-4. Under "Build and deployment", look at the "Branch" section. Change the dropdown from "None" to **"main"** and click **Save**.
+4. Under "Build and deployment", look at the "Branch" section. Change the dropdown from "None" to the branch SEAGit published to — **"main"** for folders SEAGit prepared (an older folder may use **"master"**) — and click **Save**.
 
 5. Give it a minute or two, and your website will be live on the internet!
 

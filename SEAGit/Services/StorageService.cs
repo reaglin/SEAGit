@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using SEAGit.Models;
 
@@ -10,32 +11,60 @@ namespace SEAGit.Services
     {
         private readonly string _filePath;
 
-        public StorageService()
+        /// <summary>
+        /// Set by <see cref="LoadRepositories"/> when the saved list could not be read: the path of the copy kept of
+        /// the unreadable file. Null when the list loaded normally.
+        /// </summary>
+        public string? BrokenListBackupPath { get; private set; }
+
+        /// <summary>True when the saved list could not be read (see <see cref="BrokenListBackupPath"/>).</summary>
+        public bool ListWasUnreadable { get; private set; }
+
+        /// <param name="directory">Where repos.json is kept; %LocalAppData%\SEAGit when omitted. Tests pass their own.</param>
+        public StorageService(string? directory = null)
         {
             // repos.json lives in the user's local app data, NOT next to the
             // executable. Under MSIX the install folder
             // (C:\Program Files\WindowsApps\...) is read-only, so writing there
             // threw UnauthorizedAccessException. %LocalAppData%\SEAGit is writable.
-            var dir = Path.Combine(
+            var dir = directory ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "SEAGit");
             Directory.CreateDirectory(dir);
             _filePath = Path.Combine(dir, "repos.json");
         }
 
+        public string FilePath => _filePath;
+
         public List<GitRepository> LoadRepositories()
         {
+            ListWasUnreadable = false;
+            BrokenListBackupPath = null;
             if (!File.Exists(_filePath))
                 return new List<GitRepository>();
 
             try
             {
                 string json = File.ReadAllText(_filePath);
-                return JsonSerializer.Deserialize<List<GitRepository>>(json) ?? new List<GitRepository>();
+                var list = JsonSerializer.Deserialize<List<GitRepository>>(json) ?? new List<GitRepository>();
+                return list.Where(r => !string.IsNullOrWhiteSpace(r.LocalPath)).ToList();
             }
-            catch
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                // If the file is corrupted, return a fresh list
+                // The file is damaged. Keep a copy before the list starts empty, so the next save cannot destroy
+                // the only record of the person's folders.
+                ListWasUnreadable = true;
+                try
+                {
+                    string backup = Path.Combine(Path.GetDirectoryName(_filePath)!,
+                        $"repos.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+                    File.Copy(_filePath, backup, overwrite: true);
+                    BrokenListBackupPath = backup;
+                }
+                catch (Exception copyEx) when (copyEx is IOException or UnauthorizedAccessException)
+                {
+                    BrokenListBackupPath = null;
+                }
                 return new List<GitRepository>();
             }
         }
@@ -44,7 +73,10 @@ namespace SEAGit.Services
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(repositories, options);
-            File.WriteAllText(_filePath, json);
+            // Write beside it first, then swap, so a crash mid-write cannot leave a half-written list.
+            string temp = _filePath + ".tmp";
+            File.WriteAllText(temp, json);
+            File.Move(temp, _filePath, overwrite: true);
         }
     }
 }

@@ -370,3 +370,6 @@ FodyWeavers.xsd
 # after [Bb]in/ — gitignore negations only override prior rules.
 !/SEAGit/MinGit/mingw64/bin/
 !/SEAGit/MinGit/usr/bin/
+
+# Hand-test build (docs/MANUAL-TESTING.md)
+manual-test/

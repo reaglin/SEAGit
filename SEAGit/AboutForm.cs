@@ -8,7 +8,7 @@ namespace SEAGit
     /// Help ▸ About SEAGit: who made it, what it is for, and the version.
     /// Ron, 2026-09-25: "Created by Dr. Ron Eaglin" with his picture, in every program's About.
     /// </summary>
-    public class AboutForm : Form
+    public class AboutForm : SEAGit.Forms.DpiAwareForm
     {
         private const string Description =
             "SEAGit takes a folder on your computer and puts it on GitHub, where it is kept safe and can be shared. " +
@@ -24,7 +24,7 @@ namespace SEAGit
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
-            AutoScaleMode = AutoScaleMode.Font;
+            // DpiAwareForm scales the window in OnLoad (repo rule: every form derives from it).
             AutoSize = true;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             Padding = new Padding(16);
@@ -56,6 +56,8 @@ namespace SEAGit
                 picture.Image = new Bitmap(loaded);
             }
             picture.Region = RoundedRegion(picture.Size, 14);
+            // Scaling for the screen's DPI resizes the picture after this; round its new corners too.
+            picture.SizeChanged += (_, _) => picture.Region = RoundedRegion(picture.Size, 14 * picture.Width / 96);
             FormClosed += (_, _) => picture.Image?.Dispose();
 
             var heading = new Label
@@ -114,6 +116,9 @@ namespace SEAGit
                 "apps.microsoft.com/detail/9P7Z72K774JN", "https://apps.microsoft.com/detail/9P7Z72K774JN"));
             links.Controls.Add(MakeLink("All of Dr. Ron Eaglin's programs: ",
                 "softwareplus.ai", "https://softwareplus.ai/#programs"));
+            // The privacy policy (usability checklist 6.4). It is the one the Store listing and SoftwarePlus.ai link to.
+            links.Controls.Add(MakeLink("SEAGit's privacy policy: ",
+                "github.com/reaglin/SEAGit/blob/master/PRIVACY_POLICY.txt", "https://github.com/reaglin/SEAGit/blob/master/PRIVACY_POLICY.txt"));
 
             var close = new Button
             {
@@ -175,7 +180,7 @@ namespace SEAGit
                 catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
                 {
                     MessageBox.Show(this, "Windows could not open a web browser. The address is " + address,
-                        "About SEAGit", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        "SEAGit — About", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
             return label;

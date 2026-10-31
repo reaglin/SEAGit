@@ -18,7 +18,7 @@ namespace SEAGit.Services
     {
         public const string ProgramName = "SEAGit";
         public const string StorePage = "https://apps.microsoft.com/detail/9P7Z72K774JN";
-        private const string Title = "Check for a new version";
+        private const string Title = ProgramName + " — Check for a new version";
 
         /// <summary>The version running now, as people read it (1.0.5) — the same number Help ▸ About shows.</summary>
         public static string CurrentVersion
@@ -53,8 +53,9 @@ namespace SEAGit.Services
             }
             catch (Exception ex)
             {
+                Debug.WriteLine("Store check failed: " + ex);
                 if (MessageBox.Show(owner,
-                        $"The Microsoft Store could not be asked about a new version (are you connected to the internet?).\n\n{ex.Message}\n\n" +
+                        "The Microsoft Store could not be asked about a new version. Check that this computer is connected to the internet.\n\n" +
                         $"Open {ProgramName}'s page on the Microsoft Store instead?",
                         Title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                     OpenStorePage(owner);
@@ -70,8 +71,8 @@ namespace SEAGit.Services
 
             if (MessageBox.Show(owner,
                     $"A new version of {ProgramName} is on the Microsoft Store (you have {CurrentVersion}).\n\n" +
-                    $"Download and install it now? Your list of folders is kept. When it is installed, {ProgramName} closes; open it " +
-                    "again to use the new version. (No: the Store installs it later on its own.)",
+                    $"Download and install it now? Your list of folders is kept. Windows closes {ProgramName} to install it; " +
+                    "open it again from the Start menu. (No: the Store installs it later on its own.)",
                     Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
@@ -80,9 +81,9 @@ namespace SEAGit.Services
                 var result = await store.RequestDownloadAndInstallStorePackageUpdatesAsync(updates);
                 string message = result.OverallState switch
                 {
-                    StorePackageUpdateState.Completed => $"The new version is installed. Close {ProgramName} and open it again to use it.",
+                    StorePackageUpdateState.Completed => $"The new version is installed. If {ProgramName} is still open, close it and open it again from the Start menu.",
                     StorePackageUpdateState.Canceled => "The update was cancelled. You can check again at any time, or the Store will install it later.",
-                    _ => $"The update did not finish ({result.OverallState}). The Microsoft Store will try again later, or open " +
+                    _ => $"The update did not finish. The Microsoft Store will try again later, or open " +
                          $"{ProgramName}'s page on the Store and press Update.",
                 };
                 MessageBox.Show(owner, message, Title, MessageBoxButtons.OK,
@@ -90,7 +91,8 @@ namespace SEAGit.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show(owner, $"The update could not be started.\n\n{ex.Message}\n\nOpen {ProgramName}'s page on the Microsoft Store " +
+                Debug.WriteLine("Store update failed: " + ex);
+                MessageBox.Show(owner, $"The update could not be started. Open {ProgramName}'s page on the Microsoft Store " +
                     "and press Update instead.", Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }

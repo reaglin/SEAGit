@@ -102,10 +102,24 @@ B12. *(1.15, long paths and the idle line)* Add a folder with a long place, e.g.
     under the buttons says "Ready. Press + Add Local Folder… to start."; with folders, "Ready. Select a folder, then press
     Publish Selected."; while publishing it says what SEAGit is doing, and "Ready …" comes back when it has finished.
     Also at 150 %: nothing cut off.
+B13. *(1.16, your name on GitHub)* Needs Git with no name of its own: on this computer, check in a Command Prompt that
+    `git config --global user.name` prints nothing (if it prints your name, use another Windows account, or skip to the
+    Settings part). Delete `%LOCALAPPDATA%\SEAGit\identity.json` if it is there. Add a new folder with a file, link it to an empty
+    GitHub repository and press Publish Selected — expected: after the address, **SEAGit — Your name on GitHub** opens
+    **before** "… will be published … Publish now?", with your Windows name filled in and selected. Press **Cancel** —
+    nothing sent, the log says "Publish cancelled: no name to show on GitHub was given. No files were sent; …". Publish
+    again: clear the name and press **Save** — red line "Type the name GitHub should show …"; type a name and `pat@example`
+    in **E-mail (optional)** — red line under the e-mail box; empty the e-mail, **Save** — the publish carries on; on
+    github.com the commit shows that name. Publish a change: **not** asked again. Press **F1** in the window — help about
+    the name and the private @users.noreply.github.com address. **Settings ▸ Your name on GitHub…** — the same window with
+    the saved name; put your noreply address in the e-mail, **Save** → "Saved. GitHub will show …"; the next publish on
+    github.com shows your picture. If Git has a name of its own, the window says so (blue line), and Saved says that name is
+    used instead. Help ▸ About: the privacy link reads softwareplus.ai/seagit/privacy and opens that page. At 150 %: nothing
+    cut off in the window, also with a red line showing.
 
 ### C. Every screen (USABILITY-CHECKLIST.md 1–4)
 
-For each window: **the SEAGit window**, **Link to GitHub / Change GitHub Address**, **Help for this screen**,
+For each window: **the SEAGit window**, **Link to GitHub / Change GitHub Address**, **Your name on GitHub**, **Help for this screen**,
 **About SEAGit**, and the message boxes of Check for a new version. Hover every control: tooltip? Disabled ones say
 why (the status line, while publishing)? F1 opens help about this screen (main window, address window)? Empty list says
 what to do (the intro and the log)? A wrong address says why?
@@ -116,7 +130,7 @@ D1. SEAGit has no documents to save; closing during a publish asks first (B3).
 D2. Help menu, in this order: **Help for this screen (F1)** · **Help on the web (softwareplus.ai/seagit)** ·
     **Check for a new version…** · **About SEAGit…**.
 D3. About: version **1.0.6**, and the four links work (SEAGit's page, the Microsoft Store page, all programs, the
-    privacy policy).
+    privacy policy at softwareplus.ai/seagit/privacy).
 D4. Check for a new version: the status line says "Asking the Microsoft Store…"; this hand-test copy says it was not
     installed from the Microsoft Store and offers the Store page. Every message box is titled "SEAGit" or "SEAGit — …".
 

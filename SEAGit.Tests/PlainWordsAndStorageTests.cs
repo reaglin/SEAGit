@@ -130,4 +130,103 @@ public sealed class StorageServiceTests : IDisposable
         Assert.NotNull(s.BrokenListBackupPath);
         Assert.Equal("{ this is not json", File.ReadAllText(s.BrokenListBackupPath!));
     }
+
+    [Fact]
+    public void The_name_on_GitHub_is_saved_beside_the_list_and_read_back()
+    {
+        var s = new StorageService(_dir);
+        Assert.Null(s.LoadIdentity());
+        s.SaveIdentity(new CommitIdentity { Name = "  Pat Smith ", Email = " pat@users.noreply.github.com " });
+        Assert.Equal(Path.GetDirectoryName(s.FilePath), Path.GetDirectoryName(s.IdentityFilePath));
+        Assert.False(File.Exists(s.IdentityFilePath + ".tmp"));
+
+        var back = new StorageService(_dir).LoadIdentity();
+        Assert.NotNull(back);
+        Assert.Equal("Pat Smith", back!.Name);
+        Assert.Equal("pat@users.noreply.github.com", back.Email);
+    }
+
+    [Fact]
+    public void A_damaged_name_file_means_SEAGit_asks_again()
+    {
+        var s = new StorageService(_dir);
+        File.WriteAllText(s.IdentityFilePath, "{ broken");
+        Assert.Null(s.LoadIdentity());
+    }
+}
+
+public class IdentityChoiceTests
+{
+    private static readonly CommitIdentity Saved = new() { Name = "Pat Smith", Email = "pat@users.noreply.github.com" };
+
+    [Fact]
+    public void Git_config_wins_and_no_name_is_passed()
+    {
+        var d = GitProcessService.DecideIdentity("Git Name", "git@example.com", Saved);
+        Assert.Equal(IdentitySource.GitConfig, d.Source);
+        Assert.Empty(d.Arguments);
+    }
+
+    [Fact]
+    public void Git_name_without_an_email_takes_the_saved_email()
+    {
+        var d = GitProcessService.DecideIdentity("Git Name", "", Saved);
+        Assert.Equal(IdentitySource.GitConfig, d.Source);
+        Assert.Equal(new[] { "-c", "user.email=pat@users.noreply.github.com" }, d.Arguments);
+    }
+
+    [Fact]
+    public void The_saved_setting_is_used_when_Git_has_no_name()
+    {
+        var d = GitProcessService.DecideIdentity("", "", Saved);
+        Assert.Equal(IdentitySource.SavedInSeaGit, d.Source);
+        Assert.Equal(new[] { "-c", "user.name=Pat Smith", "-c", "user.email=pat@users.noreply.github.com" }, d.Arguments);
+    }
+
+    [Fact]
+    public void A_saved_name_without_an_email_uses_the_placeholder_and_a_Git_email_still_wins()
+    {
+        var noEmail = new CommitIdentity { Name = "Pat Smith" };
+        Assert.Equal(new[] { "-c", "user.name=Pat Smith", "-c", "user.email=" + GitProcessService.FallbackEmail },
+            GitProcessService.DecideIdentity("", "", noEmail).Arguments);
+        Assert.Equal(new[] { "-c", "user.name=Pat Smith" }, GitProcessService.DecideIdentity("", "git@example.com", Saved).Arguments);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void No_name_anywhere_means_ask(string? savedName)
+    {
+        var saved = savedName == null ? null : new CommitIdentity { Name = savedName };
+        Assert.Equal(IdentitySource.AskThePerson, GitProcessService.DecideIdentity("", "", saved).Source);
+    }
+
+    [Theory]
+    [InlineData("Pat Smith", "", true)]
+    [InlineData("Pat Smith", "pat@users.noreply.github.com", true)]
+    [InlineData("Pat Smith", "pat@example.co.uk", true)]
+    [InlineData("", "pat@example.com", false)]
+    [InlineData("   ", "", false)]
+    [InlineData("Pat Smith", "pat", false)]
+    [InlineData("Pat Smith", "pat@example", false)]
+    [InlineData("Pat Smith", "pat.smith@", false)]
+    [InlineData("Pat Smith", "@example.com", false)]
+    [InlineData("Pat Smith", "pat <pat@example.com>", false)]
+    public void The_name_is_required_and_the_email_is_checked_loosely(string name, string email, bool ok)
+    {
+        string? problem = PlainWords.WhatIsWrongWithIdentity(name, email, out bool emailIsTheProblem);
+        Assert.Equal(ok, problem == null);
+        if (!ok) Assert.Equal(!string.IsNullOrWhiteSpace(name), emailIsTheProblem);
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("--")]
+    [InlineData("Pat <Smith>")]
+    public void A_name_Git_would_refuse_is_caught_first(string name)
+    {
+        Assert.NotNull(PlainWords.WhatIsWrongWithIdentity(name, "", out bool emailIsTheProblem));
+        Assert.False(emailIsTheProblem);
+    }
 }

@@ -116,9 +116,9 @@ namespace SEAGit
                 "apps.microsoft.com/detail/9P7Z72K774JN", "https://apps.microsoft.com/detail/9P7Z72K774JN"));
             links.Controls.Add(MakeLink("All of Dr. Ron Eaglin's programs: ",
                 "softwareplus.ai", "https://softwareplus.ai/#programs"));
-            // The privacy policy (usability checklist 6.4). It is the one the Store listing and SoftwarePlus.ai link to.
+            // The privacy policy (usability checklist 6.4), on SoftwarePlus.ai like every program's (Ron, 2026-10-31).
             links.Controls.Add(MakeLink("SEAGit's privacy policy: ",
-                "github.com/reaglin/SEAGit/blob/master/PRIVACY_POLICY.txt", "https://github.com/reaglin/SEAGit/blob/master/PRIVACY_POLICY.txt"));
+                "softwareplus.ai/seagit/privacy", "https://softwareplus.ai/seagit/privacy/"));
 
             var close = new Button
             {

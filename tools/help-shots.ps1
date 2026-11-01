@@ -25,7 +25,11 @@ param(
     [string]$Big = 'big-video',
     [string]$Old = 'old-project',
     # Only the Help menu, Help for this screen and About (the folders may already have been published).
-    [switch]$HelpOnly
+    [switch]$HelpOnly,
+    # Only "Your name on GitHub" as it opens during a first publish (name-on-github.png). SEAGit is started with the
+    # computer's Git settings hidden and no saved name, so it asks; $Site must be prepared, linked and have files. The
+    # name box is set to "Pat Smith" for the picture, then Cancel is pressed, so nothing is saved or sent.
+    [switch]$NameOnly
 )
 
 if (-not $FolderRoot) { $FolderRoot = Join-Path $Work 'folders' }
@@ -241,9 +245,42 @@ $list = Join-Path $listDir 'repos.json'
 $backup = Join-Path $listDir 'repos.json.help-shots-backup'
 $hadList = Test-Path $list
 if ($hadList) { Copy-Item $list $backup -Force }
+# The saved name on GitHub (identity.json) is kept aside too, and put back at the end.
+$identity = Join-Path $listDir 'identity.json'
+$identityBackup = Join-Path $listDir 'identity.json.help-shots-backup'
+$hadIdentity = Test-Path $identity
+if ($hadIdentity) { Move-Item $identity $identityBackup -Force }
 $app = $null
 
 try {
+  if ($NameOnly) {
+    # Git's own settings hidden for this SEAGit only (it passes its environment to git.exe): no name anywhere, so it asks.
+    $emptyConfig = Join-Path $Work 'empty.gitconfig'
+    Set-Content -Path $emptyConfig -Value '' -Encoding ascii
+    $savedEnv = @{ GIT_CONFIG_GLOBAL = $env:GIT_CONFIG_GLOBAL; GIT_CONFIG_NOSYSTEM = $env:GIT_CONFIG_NOSYSTEM }
+    $env:GIT_CONFIG_GLOBAL = $emptyConfig; $env:GIT_CONFIG_NOSYSTEM = '1'
+    try {
+        New-Item -ItemType Directory -Force $listDir | Out-Null
+        ConvertTo-Json @([ordered]@{ Name = $Site; LocalPath = (Join-Path $FolderRoot $Site); LastPublished = '0001-01-01T00:00:00' }) |
+            Set-Content -Path $list -Encoding utf8
+        $app = Start-SEAGit
+    } finally {
+        $env:GIT_CONFIG_GLOBAL = $savedEnv.GIT_CONFIG_GLOBAL; $env:GIT_CONFIG_NOSYSTEM = $savedEnv.GIT_CONFIG_NOSYSTEM
+    }
+    $id = $app.Process.Id; $main = $app.Root
+    Select-Folder $main $Site
+    Press $main 'Publish Selected'
+    # Asked before "N files … will be published … Publish now?"
+    $nw = Wait-Window $id { $_.Title -eq 'SEAGit — Your name on GitHub' }
+    $ne = Get-Element $nw.Handle
+    (Find-Element $ne 'Name to show on GitHub' $CT::Edit).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('Pat Smith')
+    Start-Sleep -Milliseconds 500
+    Save-Shot $nw.Handle 'name-on-github.png'
+    Answer-Box $id $nw 'Cancel'
+    Start-Sleep -Milliseconds 500
+    return
+  }
+
     # 1. The empty main window: no list at all.
     if (Test-Path $list) { Remove-Item $list }
     $app = Start-SEAGit
@@ -344,4 +381,6 @@ finally {
     foreach ($ps in $script:background) { try { $ps.Stop(); $ps.Dispose() } catch { } }
     if ($hadList) { Move-Item $backup $list -Force; Write-Output "restored the original repos.json" }
     else { Remove-Item $list, "$list.tmp" -ErrorAction SilentlyContinue; Write-Output "removed the temporary repos.json (there was none before)" }
+    Remove-Item $identity, "$identity.tmp" -ErrorAction SilentlyContinue
+    if ($hadIdentity) { Move-Item $identityBackup $identity -Force; Write-Output "restored the original identity.json" }
 }

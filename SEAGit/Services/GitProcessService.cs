@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SEAGit.Models;
 
 namespace SEAGit.Services
 {
@@ -29,7 +30,26 @@ namespace SEAGit.Services
         FolderEmpty,
         /// <summary>Git reported a problem; <see cref="PublishResult.RawError"/> has its words.</summary>
         Failed,
+        /// <summary>
+        /// Changes need saving, but neither Git nor SEAGit's settings have a name to show on GitHub. Nothing was saved or
+        /// sent; ask the person for the name, then publish again with it.
+        /// </summary>
+        NeedsName,
     }
+
+    /// <summary>Where the name on a commit comes from.</summary>
+    public enum IdentitySource
+    {
+        /// <summary>Git's own configuration has a name (the person set it); it is used as it is.</summary>
+        GitConfig,
+        /// <summary>The name saved in SEAGit's settings ("Your name on GitHub").</summary>
+        SavedInSeaGit,
+        /// <summary>No name anywhere: SEAGit has to ask the person.</summary>
+        AskThePerson,
+    }
+
+    /// <summary>The choice of name and e-mail for a commit, and the "-c" arguments that carry it.</summary>
+    public sealed record IdentityDecision(IdentitySource Source, string[] Arguments);
 
     public sealed record PublishResult(PublishOutcome Outcome, int FileCount, string RawError = "")
     {
@@ -45,9 +65,9 @@ namespace SEAGit.Services
         public const long GitHubFileLimitBytes = 100L * 1024 * 1024;
 
         /// <summary>
-        /// Used for a commit only when this computer has no Git name/e-mail set (the bundled MinGit has none, so the
-        /// first commit on a new PC failed with "Author identity unknown"). The .invalid address can never belong to a
-        /// GitHub account, so GitHub will not show the commits as somebody else's.
+        /// Used for a commit only when neither Git nor SEAGit's saved setting has an e-mail (the person may leave it out
+        /// when SEAGit asks for their name). The .invalid address can never belong to a GitHub account, so GitHub will
+        /// not show the commits as somebody else's.
         /// </summary>
         public const string FallbackEmail = "seagit-user@seagit.invalid";
 
@@ -188,8 +208,10 @@ namespace SEAGit.Services
         /// saved earlier that never reached GitHub (a publish whose sign-in or connection failed), so they are not left
         /// behind on this computer. <paramref name="progress"/> receives plain-words steps for the Activity Log.
         /// </summary>
+        /// <param name="savedIdentity">The name saved in SEAGit's settings, if any. When changes need saving and neither
+        /// Git nor this has a name, nothing is done and the result is <see cref="PublishOutcome.NeedsName"/>.</param>
         public async Task<PublishResult> PublishAsync(string targetDirectory, IProgress<string>? progress = null,
-            string commitMessage = DefaultCommitMessage)
+            string commitMessage = DefaultCommitMessage, CommitIdentity? savedIdentity = null)
         {
             var status = await RunAsync(targetDirectory, "status", "--porcelain", "--untracked-files=all").ConfigureAwait(false);
             if (!status.Ok) return Fail(status);
@@ -198,12 +220,16 @@ namespace SEAGit.Services
 
             if (fileCount > 0)
             {
+                // Decided before anything is saved, so a person who is asked and presses Cancel finds the folder as it was.
+                var identity = await DecideIdentityAsync(targetDirectory, savedIdentity).ConfigureAwait(false);
+                if (identity.Source == IdentitySource.AskThePerson)
+                    return new PublishResult(PublishOutcome.NeedsName, fileCount);
+
                 progress?.Report($"Saving {Files(fileCount)}…");
                 var add = await RunAsync(targetDirectory, "add", "-A").ConfigureAwait(false);
                 if (!add.Ok) return Fail(add);
 
-                var identity = await IdentityArgumentsAsync(targetDirectory).ConfigureAwait(false);
-                var commitArgs = identity.Concat(new[] { "commit", "-m", commitMessage }).ToArray();
+                var commitArgs = identity.Arguments.Concat(new[] { "commit", "-m", commitMessage }).ToArray();
                 var commit = await RunAsync(targetDirectory, commitArgs).ConfigureAwait(false);
                 if (!commit.Ok) return Fail(commit);
 
@@ -246,24 +272,53 @@ namespace SEAGit.Services
             RunAsync(targetDirectory, "push", "-u", "origin", "HEAD");
 
         /// <summary>
-        /// "-c user.name=… -c user.email=…" when this computer has no Git name or e-mail, so the commit does not fail
-        /// with "Author identity unknown". A name or e-mail the person set themselves is always used instead.
+        /// Whose name goes on a commit (Ron, 2026-10-31: ask once). A name or e-mail the person set in Git always wins;
+        /// otherwise the one saved in SEAGit's settings; with no name anywhere SEAGit must ask. The bundled MinGit has no
+        /// name, so without this the first commit on a new PC failed with "Author identity unknown". The choice goes to
+        /// Git as "-c user.name=… -c user.email=…" for that one commit: the person's Git configuration is never written.
         /// </summary>
-        private async Task<string[]> IdentityArgumentsAsync(string targetDirectory)
+        public async Task<IdentityDecision> DecideIdentityAsync(string targetDirectory, CommitIdentity? saved)
         {
+            string gitName = await ConfigValueAsync(targetDirectory, "user.name").ConfigureAwait(false);
+            string gitEmail = await ConfigValueAsync(targetDirectory, "user.email").ConfigureAwait(false);
+            return DecideIdentity(gitName, gitEmail, saved);
+        }
+
+        /// <summary>The rule of <see cref="DecideIdentityAsync"/>, given what Git has ("" for none).</summary>
+        public static IdentityDecision DecideIdentity(string gitName, string gitEmail, CommitIdentity? saved)
+        {
+            string savedName = saved?.Name?.Trim() ?? "";
+            string savedEmail = saved?.Email?.Trim() ?? "";
             var args = new List<string>();
-            var name = await RunAsync(targetDirectory, "config", "user.name").ConfigureAwait(false);
-            if (!name.Ok || string.IsNullOrWhiteSpace(name.Output))
+
+            IdentitySource source;
+            if (gitName.Length > 0)
+                source = IdentitySource.GitConfig;
+            else if (savedName.Length > 0)
             {
-                string who = string.IsNullOrWhiteSpace(Environment.UserName) ? "SEAGit user" : Environment.UserName;
-                args.Add("-c"); args.Add("user.name=" + who);
+                source = IdentitySource.SavedInSeaGit;
+                args.Add("-c"); args.Add("user.name=" + savedName);
             }
-            var email = await RunAsync(targetDirectory, "config", "user.email").ConfigureAwait(false);
-            if (!email.Ok || string.IsNullOrWhiteSpace(email.Output))
+            else
+                return new IdentityDecision(IdentitySource.AskThePerson, Array.Empty<string>());
+
+            if (gitEmail.Length == 0)
             {
-                args.Add("-c"); args.Add("user.email=" + FallbackEmail);
+                args.Add("-c"); args.Add("user.email=" + (savedEmail.Length > 0 ? savedEmail : FallbackEmail));
             }
-            return args.ToArray();
+            return new IdentityDecision(source, args.ToArray());
+        }
+
+        /// <summary>
+        /// The name Git itself has (the person's own Git settings), or "" when it has none. Read outside any folder, for
+        /// the "Your name on GitHub" window, which says when Git's own name is used instead of the one typed there.
+        /// </summary>
+        public Task<string> GitOwnNameAsync() => ConfigValueAsync(Path.GetTempPath(), "user.name");
+
+        private async Task<string> ConfigValueAsync(string directory, string key)
+        {
+            var r = await RunAsync(directory, "config", key).ConfigureAwait(false);
+            return r.Ok ? r.Output.Trim() : "";
         }
 
         private static PublishResult Fail(GitResult r) => new(PublishOutcome.Failed, 0, r.Raw);

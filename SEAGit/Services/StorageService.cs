@@ -69,14 +69,37 @@ namespace SEAGit.Services
             }
         }
 
-        public void SaveRepositories(List<GitRepository> repositories)
+        public void SaveRepositories(List<GitRepository> repositories) => SafeWrite(_filePath, repositories);
+
+        /// <summary>identity.json, beside repos.json: the name (and e-mail) to show on GitHub, from "Your name on GitHub".</summary>
+        public string IdentityFilePath => Path.Combine(Path.GetDirectoryName(_filePath)!, "identity.json");
+
+        /// <summary>The name saved in SEAGit's settings, or null when none was saved (or the file cannot be read, in
+        /// which case SEAGit simply asks again).</summary>
+        public CommitIdentity? LoadIdentity()
         {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(repositories, options);
-            // Write beside it first, then swap, so a crash mid-write cannot leave a half-written list.
-            string temp = _filePath + ".tmp";
+            if (!File.Exists(IdentityFilePath)) return null;
+            try
+            {
+                var identity = JsonSerializer.Deserialize<CommitIdentity>(File.ReadAllText(IdentityFilePath));
+                return identity == null || string.IsNullOrWhiteSpace(identity.Name) ? null : identity;
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        public void SaveIdentity(CommitIdentity identity) =>
+            SafeWrite(IdentityFilePath, new CommitIdentity { Name = identity.Name.Trim(), Email = identity.Email.Trim() });
+
+        /// <summary>Writes beside the file first, then swaps, so a crash mid-write cannot leave it half-written.</summary>
+        private static void SafeWrite<T>(string path, T value)
+        {
+            string json = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+            string temp = path + ".tmp";
             File.WriteAllText(temp, json);
-            File.Move(temp, _filePath, overwrite: true);
+            File.Move(temp, path, overwrite: true);
         }
     }
 }

@@ -11,6 +11,9 @@ public sealed class GitProcessServiceTests : IDisposable
     private readonly string _root;
     private readonly GitProcessService _git;
 
+    /// <summary>The name saved in SEAGit's settings, for the tests that are not about the name.</summary>
+    private static readonly Models.CommitIdentity Me = new() { Name = "Test Person" };
+
     public GitProcessServiceTests()
     {
         _root = Path.Combine(Path.GetTempPath(), "seagit-tests", Guid.NewGuid().ToString("N"));
@@ -84,21 +87,45 @@ public sealed class GitProcessServiceTests : IDisposable
         var pending = await _git.GetFilesToPublishAsync(folder, firstPublish: true);
         Assert.Equal(2, pending.Count);
 
-        var result = await _git.PublishAsync(folder);
+        // No name in Git and none saved: SEAGit must ask, and nothing is saved or sent meanwhile.
+        var asks = await _git.PublishAsync(folder);
+        Assert.Equal(PublishOutcome.NeedsName, asks.Outcome);
+        Assert.False((await _git.RunAsync(folder, "rev-parse", "--verify", "--quiet", "HEAD")).Ok);
+        Assert.Equal("", await BareBranchesAsync(bare));
+
+        // The name the person typed (no e-mail) is used, with the placeholder address.
+        var result = await _git.PublishAsync(folder, savedIdentity: new Models.CommitIdentity { Name = "Pat Smith" });
         Assert.Equal(PublishOutcome.Published, result.Outcome);
         Assert.Equal(2, result.FileCount);
         Assert.Equal("refs/heads/main", await BareBranchesAsync(bare));
 
-        string author = (await _git.RunAsync(bare, "log", "-1", "--format=%ae", "main")).Output.Trim();
-        Assert.Equal(GitProcessService.FallbackEmail, author);
+        Assert.Equal("Pat Smith <" + GitProcessService.FallbackEmail + ">",
+            (await _git.RunAsync(bare, "log", "-1", "--format=%an <%ae>", "main")).Output.Trim());
         Assert.True(await _git.HasBeenPublishedAsync(folder));
         var when = await _git.LastPublishedAsync(folder);
         Assert.NotNull(when);
         Assert.True(Math.Abs((DateTime.Now - when!.Value).TotalMinutes) < 5);
+
+        // Git's own configuration was not written: the name went with -c for that commit only.
+        Assert.Equal("", (await _git.RunAsync(folder, "config", "user.name")).Output.Trim());
     }
 
     [Fact]
-    public async Task A_name_and_email_the_person_set_are_used_instead_of_the_fallback()
+    public async Task The_saved_name_and_email_are_used_when_Git_has_none()
+    {
+        string bare = await NewBareAsync("hub");
+        string folder = await NewFolderAsync("saved");
+        File.WriteAllText(Path.Combine(folder, "a.txt"), "a");
+        await _git.SetRemoteAsync(folder, bare);
+
+        var saved = new Models.CommitIdentity { Name = "Pat Smith", Email = "12345+pat@users.noreply.github.com" };
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder, savedIdentity: saved)).Outcome);
+        Assert.Equal("Pat Smith <12345+pat@users.noreply.github.com>",
+            (await _git.RunAsync(bare, "log", "-1", "--format=%an <%ae>", "main")).Output.Trim());
+    }
+
+    [Fact]
+    public async Task A_name_and_email_the_person_set_in_Git_win_over_the_saved_ones()
     {
         string bare = await NewBareAsync("hub");
         string folder = await NewFolderAsync("work");
@@ -107,8 +134,24 @@ public sealed class GitProcessServiceTests : IDisposable
         File.WriteAllText(Path.Combine(folder, "a.txt"), "a");
         await _git.SetRemoteAsync(folder, bare);
 
-        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder)).Outcome);
-        Assert.Equal("pat@example.com", (await _git.RunAsync(bare, "log", "-1", "--format=%ae", "main")).Output.Trim());
+        var saved = new Models.CommitIdentity { Name = "Someone Else", Email = "else@example.com" };
+        Assert.Equal(IdentitySource.GitConfig, (await _git.DecideIdentityAsync(folder, saved)).Source);
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder, savedIdentity: saved)).Outcome);
+        Assert.Equal("Pat Person <pat@example.com>",
+            (await _git.RunAsync(bare, "log", "-1", "--format=%an <%ae>", "main")).Output.Trim());
+    }
+
+    [Fact]
+    public async Task Nothing_to_save_never_asks_for_a_name()
+    {
+        string bare = await NewBareAsync("hub");
+        string folder = await NewFolderAsync("asked");
+        File.WriteAllText(Path.Combine(folder, "a.txt"), "a");
+        await _git.SetRemoteAsync(folder, bare);
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder, savedIdentity: Me)).Outcome);
+
+        // A later press with nothing new, and no saved name: no question, just "nothing to publish".
+        Assert.Equal(PublishOutcome.NothingToPublish, (await _git.PublishAsync(folder)).Outcome);
     }
 
     [Fact]
@@ -117,11 +160,11 @@ public sealed class GitProcessServiceTests : IDisposable
         string bare = await NewBareAsync("hub");
         string empty = await NewFolderAsync("empty");
         await _git.SetRemoteAsync(empty, bare);
-        Assert.Equal(PublishOutcome.FolderEmpty, (await _git.PublishAsync(empty)).Outcome);
+        Assert.Equal(PublishOutcome.FolderEmpty, (await _git.PublishAsync(empty, savedIdentity: Me)).Outcome);
 
         File.WriteAllText(Path.Combine(empty, "a.txt"), "a");
-        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(empty)).Outcome);
-        Assert.Equal(PublishOutcome.NothingToPublish, (await _git.PublishAsync(empty)).Outcome);
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(empty, savedIdentity: Me)).Outcome);
+        Assert.Equal(PublishOutcome.NothingToPublish, (await _git.PublishAsync(empty, savedIdentity: Me)).Outcome);
     }
 
     [Fact]
@@ -132,14 +175,14 @@ public sealed class GitProcessServiceTests : IDisposable
         File.WriteAllText(Path.Combine(folder, "index.html"), "x");
         await _git.SetRemoteAsync(folder, Path.Combine(_root, "missing.git").Replace('\\', '/'));
 
-        var failed = await _git.PublishAsync(folder);
+        var failed = await _git.PublishAsync(folder, savedIdentity: Me);
         Assert.Equal(PublishOutcome.Failed, failed.Outcome);
         Assert.False(string.IsNullOrWhiteSpace(failed.RawError));
         Assert.DoesNotContain("plain words", PlainWords.ExplainGitError(failed.RawError)); // a known case, not the fallback
 
         // The commit stayed on this computer; the folder itself is clean now.
         Assert.True((await _git.SetRemoteAsync(folder, bare)).Ok);
-        var retry = await _git.PublishAsync(folder);
+        var retry = await _git.PublishAsync(folder, savedIdentity: Me);
         Assert.Equal(PublishOutcome.Published, retry.Outcome);
         Assert.Equal(1, retry.FileCount);
         Assert.Equal("refs/heads/main", await BareBranchesAsync(bare));
@@ -152,21 +195,21 @@ public sealed class GitProcessServiceTests : IDisposable
         string folder = await NewFolderAsync("site");
         File.WriteAllText(Path.Combine(folder, "index.html"), "v1");
         await _git.SetRemoteAsync(folder, bare);
-        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder)).Outcome);
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder, savedIdentity: Me)).Outcome);
 
         // GitHub cannot be reached for one publish (the address breaks), then comes back.
         await _git.RunAsync(folder, "remote", "set-url", "origin", Path.Combine(_root, "gone.git").Replace('\\', '/'));
         File.WriteAllText(Path.Combine(folder, "index.html"), "v2");
-        Assert.Equal(PublishOutcome.Failed, (await _git.PublishAsync(folder)).Outcome);
+        Assert.Equal(PublishOutcome.Failed, (await _git.PublishAsync(folder, savedIdentity: Me)).Outcome);
         await _git.RunAsync(folder, "remote", "set-url", "origin", bare);
 
         var progressNotes = new List<string>();
-        var resend = await _git.PublishAsync(folder, new SyncProgress(progressNotes.Add));
+        var resend = await _git.PublishAsync(folder, new SyncProgress(progressNotes.Add), savedIdentity: Me);
         Assert.Equal(PublishOutcome.PublishedEarlierChanges, resend.Outcome);
         Assert.Equal(1, resend.FileCount);
         Assert.Contains(progressNotes, n => n.Contains("had not reached GitHub yet"));
         Assert.Equal("v2", (await _git.RunAsync(bare, "show", "main:index.html")).Output);
-        Assert.Equal(PublishOutcome.NothingToPublish, (await _git.PublishAsync(folder)).Outcome);
+        Assert.Equal(PublishOutcome.NothingToPublish, (await _git.PublishAsync(folder, savedIdentity: Me)).Outcome);
     }
 
     [Fact]
@@ -179,7 +222,7 @@ public sealed class GitProcessServiceTests : IDisposable
         File.WriteAllText(Path.Combine(folder, "notes.txt"), "n");
         await _git.SetRemoteAsync(folder, bare);
 
-        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder)).Outcome);
+        Assert.Equal(PublishOutcome.Published, (await _git.PublishAsync(folder, savedIdentity: Me)).Outcome);
         Assert.Equal("refs/heads/master", await BareBranchesAsync(bare));
     }
 
@@ -191,7 +234,7 @@ public sealed class GitProcessServiceTests : IDisposable
         string folder = await NewFolderAsync("site");
         File.WriteAllText(Path.Combine(folder, "index.html"), "x");
         await _git.SetRemoteAsync(folder, bare1);
-        await _git.PublishAsync(folder);
+        await _git.PublishAsync(folder, savedIdentity: Me);
 
         // What Change GitHub Address… does.
         Assert.True((await _git.SetRemoteAsync(folder, bare2)).Ok);
@@ -199,7 +242,7 @@ public sealed class GitProcessServiceTests : IDisposable
         Assert.Equal(bare2, await _git.GetRemoteUrlAsync(folder));
         Assert.False(await _git.HasBeenPublishedAsync(folder));
 
-        var r = await _git.PublishAsync(folder);
+        var r = await _git.PublishAsync(folder, savedIdentity: Me);
         Assert.Equal(PublishOutcome.Published, r.Outcome);
         Assert.Equal(1, r.FileCount);
         Assert.Equal("refs/heads/main", await BareBranchesAsync(bare2));
@@ -230,7 +273,7 @@ public sealed class GitProcessServiceTests : IDisposable
         for (int i = 0; i < 3000; i++) File.WriteAllText(Path.Combine(folder, $"file-with-a-long-name-{i:0000}.txt"), "x\n");
         await _git.SetRemoteAsync(folder, bare);
 
-        var run = _git.PublishAsync(folder);
+        var run = _git.PublishAsync(folder, savedIdentity: Me);
         var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromMinutes(2)));
         Assert.Same(run, finished);
         Assert.Equal(3000, (await run).FileCount);

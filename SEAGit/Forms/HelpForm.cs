@@ -116,7 +116,8 @@ namespace SEAGit.Forms
             "## The other buttons\n\n" +
             "Open Folder opens the selected folder in File Explorer (double-clicking it in the list does the same).\n" +
             "Change GitHub Address… publishes the selected folder to a different GitHub repository from now on.\n" +
-            "Remove from List takes the folder off SEAGit's list. Your files are not deleted.\n\n" +
+            "Remove from List takes the folder off SEAGit's list. Your files are not deleted.\n" +
+            "Settings ▸ Your name on GitHub… changes the name GitHub shows beside your changes.\n\n" +
             "## When something goes wrong\n\n" +
             "SEAGit tells you in plain words what happened and what to do next. Git's own words are in the Activity Log at " +
             "the bottom, for anyone helping you. While SEAGit is working, its buttons are turned off; they come back when it has finished.";
@@ -131,5 +132,21 @@ namespace SEAGit.Forms
             "## Then\n\n" +
             "Paste the address in the box (Ctrl+V) and press the button. Cancel or Esc leaves everything as it was. " +
             "An address that does not start with https://github.com/ is refused, and the window says why.";
+
+        public const string IdentityHelp =
+            "GitHub shows a name beside every change you publish, so the people who see your GitHub repository know who " +
+            "made it. This window asks for that name. SEAGit asks only once and keeps it in its own settings; it never " +
+            "changes Git's settings on your computer. If Git already has a name of its own (set outside SEAGit), that name is used.\n\n" +
+            "## Name to show on GitHub\n\n" +
+            "Required. Usually your full name, for example Pat Smith. Anyone who can see the GitHub repository can see it.\n\n" +
+            "## E-mail (optional)\n\n" +
+            "Leave it empty and SEAGit puts a placeholder address on your changes; GitHub then shows the name without your " +
+            "picture. To have GitHub link your changes to your account, use the private address GitHub gives you: sign in " +
+            "at github.com, open Settings (your picture, top right) ▸ Emails, and tick \"Keep my email addresses private\". " +
+            "GitHub then shows an address ending in @users.noreply.github.com; copy it into this box.\n\n" +
+            "## Save, Cancel and changing it later\n\n" +
+            "Save keeps the name and, during a publish, carries on publishing. Cancel closes the window; during a publish " +
+            "it stops the publish and nothing is sent. To change the name later, use Settings ▸ Your name on GitHub… in the " +
+            "SEAGit window. Changes already on GitHub keep the name they had.";
     }
 }

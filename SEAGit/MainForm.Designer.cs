@@ -10,6 +10,8 @@
         private System.Windows.Forms.Label lblRepos;
         private System.Windows.Forms.Label lblLog;
         private System.Windows.Forms.MenuStrip menuMain;
+        private System.Windows.Forms.ToolStripMenuItem mnuSettings;
+        private System.Windows.Forms.ToolStripMenuItem mnuSettingsName;
         private System.Windows.Forms.ToolStripMenuItem mnuHelp;
         private System.Windows.Forms.ToolStripMenuItem mnuCheckUpdates;
         private System.Windows.Forms.ToolStripMenuItem mnuAbout;
@@ -39,6 +41,8 @@
             this.lblRepos = new System.Windows.Forms.Label();
             this.lblLog = new System.Windows.Forms.Label();
             this.menuMain = new System.Windows.Forms.MenuStrip();
+            this.mnuSettings = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuSettingsName = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuCheckUpdates = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuAbout = new System.Windows.Forms.ToolStripMenuItem();
@@ -53,11 +57,22 @@
             this.SuspendLayout();
 
             // menuMain
-            this.menuMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuHelp });
+            this.menuMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuSettings, this.mnuHelp });
             this.menuMain.Location = new System.Drawing.Point(0, 0);
             this.menuMain.Name = "menuMain";
             this.menuMain.Size = new System.Drawing.Size(550, 24);
             this.menuMain.TabIndex = 6;
+
+            // mnuSettings — SEAGit's own settings (Ron, 2026-10-31: the name to show on GitHub is asked once, changed here)
+            this.mnuSettings.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { this.mnuSettingsName });
+            this.mnuSettings.Name = "mnuSettings";
+            this.mnuSettings.Text = "&Settings";
+
+            // mnuSettingsName
+            this.mnuSettingsName.Name = "mnuSettingsName";
+            this.mnuSettingsName.Text = "Your &name on GitHub…";
+            this.mnuSettingsName.ToolTipText = "The name (and, if you like, the e-mail) GitHub shows beside every change you publish. SEAGit asks for it the first time; change it here";
+            this.mnuSettingsName.Click += new System.EventHandler(this.MnuSettingsName_Click);
 
             // mnuHelp
             // The standard Help menu of every Store program (usability checklist 6.3), in this order and with these words.

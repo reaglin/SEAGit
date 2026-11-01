@@ -171,5 +171,29 @@ namespace SEAGit.Services
             string name = parts[1].EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? parts[1][..^4] : parts[1];
             return $"https://github.com/{parts[0]}/{name}.git";
         }
+
+        /// <summary>
+        /// Checks what was typed in "Your name on GitHub". Returns null when it can be saved, or what to fix, in words
+        /// for the line under the box. The e-mail is optional and checked only loosely (an @, and a dot after it).
+        /// </summary>
+        public static string? WhatIsWrongWithIdentity(string name, string email, out bool emailIsTheProblem)
+        {
+            emailIsTheProblem = false;
+            if (string.IsNullOrWhiteSpace(name))
+                return "Type the name GitHub should show beside your changes, for example Pat Smith.";
+            // Git refuses a name with < or > in it, or one made only of punctuation ("empty ident name not allowed").
+            if (name.IndexOfAny(new[] { '<', '>' }) >= 0 || !name.Any(char.IsLetterOrDigit))
+                return "Use letters in the name (and no < or >), for example Pat Smith.";
+            string e = (email ?? "").Trim();
+            if (e.Length == 0) return null;
+            int at = e.IndexOf('@');
+            if (at <= 0 || e.IndexOf('.', at + 1) < 0 || e.EndsWith(".") || e.IndexOfAny(new[] { ' ', '<', '>' }) >= 0)
+            {
+                emailIsTheProblem = true;
+                return "That does not look like an e-mail address: it needs an @ and a dot after it, such as " +
+                       "your-name@users.noreply.github.com. Leave the box empty if you are not sure.";
+            }
+            return null;
+        }
     }
 }

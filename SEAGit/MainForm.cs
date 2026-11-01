@@ -323,6 +323,15 @@ namespace SEAGit
                 return;
             }
 
+            // The name to show on GitHub, asked once, before the last question ("Publish now?"), so that one really is
+            // the last thing before anything is sent (UX review 2026-10-31).
+            CommitIdentity? saved = _storageService.LoadIdentity();
+            if (files.Count > 0 && (await _gitService.DecideIdentityAsync(path, saved)).Source == IdentitySource.AskThePerson)
+            {
+                saved = AskForNameDuringPublish();
+                if (saved == null) return;
+            }
+
             if (firstPublish && files.Count > 0)
             {
                 long total = files.Sum(f => f.Bytes);
@@ -342,7 +351,15 @@ namespace SEAGit
             SetBusy(true, $"Publishing \"{repo.Name}\"… If a GitHub sign-in window opens in your browser, sign in there; " +
                 "if you close it without signing in, SEAGit says so here.");
             var progress = new Progress<string>(LogMessage);
-            PublishResult result = await _gitService.PublishAsync(path, progress);
+            PublishResult result = await _gitService.PublishAsync(path, progress, savedIdentity: saved);
+
+            if (result.Outcome == PublishOutcome.NeedsName)
+            {
+                // Only when the files changed after the check above; nothing has been saved yet.
+                saved = AskForNameDuringPublish();
+                if (saved == null) return;
+                result = await _gitService.PublishAsync(path, progress, savedIdentity: saved);
+            }
 
             switch (result.Outcome)
             {
@@ -373,12 +390,77 @@ namespace SEAGit
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
 
+                case PublishOutcome.NeedsName:
+                    // Only if Git and the saved setting still have no name after asking; nothing was saved or sent.
+                    LogMessage("Publish stopped: SEAGit still has no name to show on GitHub.");
+                    MessageBox.Show(this, "Nothing was published: SEAGit has no name to show on GitHub beside your changes. " +
+                        "Use Settings ▸ Your name on GitHub… to type one, then press Publish Selected again.",
+                        AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    break;
+
                 default:
                     LogMessage("Publish failed. Git said:\n" + result.RawError);
                     MessageBox.Show(this, "The folder was not published.\n\n" + PlainWords.ExplainGitError(result.RawError, publishedBefore: !firstPublish),
                         AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
             }
+        }
+
+        /// <summary>Shows "Your name on GitHub"; what was typed, or null on Cancel.</summary>
+        private CommitIdentity? AskForIdentity(CommitIdentity? current, bool publishingNow, string gitOwnName)
+        {
+            using var dialog = new IdentityForm(current, publishingNow, gitOwnName);
+            return dialog.ShowDialog(this) == DialogResult.OK ? dialog.Identity : null;
+        }
+
+        /// <summary>
+        /// Neither Git nor SEAGit has a name to put on the changes: ask once (Ron, 2026-10-31). The saved name, or null
+        /// when the person pressed Cancel (the publish stops; no files are sent) or it could not be saved.
+        /// </summary>
+        private CommitIdentity? AskForNameDuringPublish()
+        {
+            var identity = AskForIdentity(null, publishingNow: true, gitOwnName: "");
+            if (identity == null)
+            {
+                const string cancelled = "Publish cancelled: no name to show on GitHub was given. No files were sent; " +
+                    "press Publish Selected when you are ready.";
+                LogMessage(cancelled);
+                return null;
+            }
+            return SaveIdentityOrWarn(identity, publishingNow: true) ? identity : null;
+        }
+
+        /// <summary>Keeps the name in SEAGit's settings (identity.json beside repos.json); says so if it cannot.</summary>
+        private bool SaveIdentityOrWarn(CommitIdentity identity, bool publishingNow)
+        {
+            try
+            {
+                _storageService.SaveIdentity(identity);
+                LogMessage($"Your name on GitHub is now \"{identity.Name}\"" +
+                    (identity.Email.Length > 0 ? $" ({identity.Email})." : " (no e-mail: SEAGit uses a placeholder address)."));
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                LogMessage("Could not save your name on GitHub: " + ex.Message);
+                MessageBox.Show(this, "SEAGit could not save your name on GitHub" +
+                    (publishingNow ? ", so nothing was published. " : ". Your name was not changed. ") + PlainWords.SeeLog,
+                    AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private async void MnuSettingsName_Click(object? sender, EventArgs e)
+        {
+            if (_busy) return;
+            string gitOwnName = _gitService.IsGitInstalled() ? await _gitService.GitOwnNameAsync() : "";
+            var identity = AskForIdentity(_storageService.LoadIdentity(), publishingNow: false, gitOwnName);
+            if (identity == null || !SaveIdentityOrWarn(identity, publishingNow: false)) return;
+            MessageBox.Show(this, gitOwnName.Length > 0
+                    ? $"Saved. Git on this computer has a name of its own, \"{gitOwnName}\", so GitHub shows \"{gitOwnName}\", " +
+                      $"not \"{identity.Name}\", beside the changes you publish."
+                    : $"Saved. GitHub will show \"{identity.Name}\" beside the changes you publish from now on.",
+                AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>Shows the GitHub address window; the checked address, or null on Cancel.</summary>
@@ -502,6 +584,7 @@ namespace SEAGit
         {
             _busy = busy;
             btnAddRepo.Enabled = btnPublish.Enabled = btnChangeAddress.Enabled = btnRemove.Enabled = !busy;
+            mnuSettingsName.Enabled = !busy;
             lstRepos.Enabled = !busy;
             btnPublish.Text = busy && status.StartsWith("Publishing", StringComparison.Ordinal) ? "Publishing…" : "&Publish Selected";
             // Disabled buttons cannot show a tooltip in WinForms, so the status line says why they are off (checklist 2.3).

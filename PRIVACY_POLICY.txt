@@ -1,60 +1,121 @@
 SEAGit - Privacy Policy
 
-Last updated: May 18, 2026
+Effective date: October 31, 2026. This policy covers SEAGit 1.0.6 and later.
+(First published May 18, 2026.)
 
-SEAGit (Super-Easy and Accessible Git) is a desktop application for Windows
-that lets you publish a folder on your computer to GitHub without using the
-command line. This policy explains what data the application handles.
+The policy is published at https://softwareplus.ai/seagit/privacy/ ; this file
+is a copy of the same text.
 
-
-1. DATA STORED ON YOUR COMPUTER
-
-SEAGit stores its settings and the list of folders you have added locally on
-your computer. This information stays on your computer and is not sent to the
-developer.
+SEAGit (Super-Easy and Accessible Git) is a Windows desktop application,
+published on the Microsoft Store by Dean Eaglin ("we", "us"), that lets you
+publish a folder on your computer to GitHub without using the command line.
+This policy explains what the application handles and where it goes.
 
 
-2. PUBLISHING TO GITHUB
+1. SUMMARY
 
-SEAGit's purpose is to publish the contents of folders you select to a GitHub
-repository that you specify. When you publish, the files in that folder are
-uploaded to GitHub. Your use of GitHub, and the storage of any files you
-publish, are governed by GitHub's own terms and privacy policy.
-
-
-3. GITHUB SIGN-IN
-
-To publish, SEAGit signs you in to GitHub using the standard Git and Windows
-credential process - typically a secure browser-based GitHub login. Your GitHub
-credentials are managed by Git Credential Manager and Windows; SEAGit does not
-store, see, or transmit your GitHub password.
+Your files stay on your computer until you publish them, and then they go only
+to the GitHub repository you linked the folder to. SEAGit has no accounts with
+us, no advertising, no analytics and no telemetry. It never sends anything to
+us.
 
 
-4. GIT FOR WINDOWS
+2. DATA STORED ON YOUR COMPUTER
 
-SEAGit performs version-control operations using Git for Windows, which you
-install separately. SEAGit invokes that local Git installation on your computer.
-
-
-5. INFORMATION THE DEVELOPER COLLECTS
-
-SEAGit contains no analytics or telemetry. The developer does not collect,
-receive, or store your files, your credentials, or any personal information.
-
-
-6. CHILDREN
-
-SEAGit is a developer and productivity tool intended for general audiences. It
-is not directed at children.
+SEAGit keeps its settings on your computer, in %LOCALAPPDATA%\SEAGit:
+- the list of folders you have added, with the GitHub repository each one is
+  linked to (repos.json);
+- the name (and, if you give one, the e-mail address) to show on GitHub beside
+  your changes, if SEAGit had to ask you for it (see section 4);
+- a crash log (startup-crash.log), if SEAGit ever fails while starting; it
+  stays on your computer.
+None of this is sent to us. Uninstalling SEAGit does not touch your folders or
+what you published to GitHub.
 
 
-7. CHANGES TO THIS POLICY
+3. GIT IS BUILT IN
 
-This policy may be updated from time to time. The "Last updated" date above
-indicates when it was last revised.
+SEAGit includes Git (MinGit, a Git for Windows redistributable) and runs it on
+your computer to keep track of the changes in each folder you add. Nothing needs
+to be installed separately. In each folder, Git keeps its records in the hidden
+".git" folder, as Git always does.
 
 
-8. CONTACT
+4. PUBLISHING TO GITHUB
 
-For questions about this privacy policy, visit https://github.com/reaglin/SEAGit
-Contact email: [add a support email address here before publishing]
+SEAGit's purpose is to publish the contents of the folders you choose to the
+GitHub repository you link each one to. Only when you press Publish Selected,
+the files in that folder (except those a .gitignore file in it leaves out) and
+their changes are sent to that repository on GitHub.
+
+Each change you publish carries a name and an e-mail address, as Git requires,
+and GitHub shows them beside your files. SEAGit uses the name and e-mail already
+set in Git on your computer. If Git has no name, SEAGit asks you once for the
+name to show and keeps it in its settings on this computer; if you give no
+e-mail, it uses an address that belongs to no one (seagit-user@seagit.invalid).
+
+A public repository can be read by anyone. Your use of GitHub, and the storage
+of anything you publish there, are governed by GitHub's own terms and privacy
+statement, not by this policy.
+
+
+5. GITHUB SIGN-IN
+
+The first time you publish, Git's own sign-in helper (Git Credential Manager,
+built in with Git) opens GitHub's sign-in in your web browser. You sign in on
+GitHub's own page. The sign-in is then remembered by Windows (Windows Credential
+Manager) for the next publish. SEAGit does not see, store or send your GitHub
+password, and does not keep a GitHub token of its own.
+
+
+6. OTHER CONNECTIONS, EACH ONLY WHEN YOU CHOOSE IT
+
+- Help > Check for a new version asks the Microsoft Store whether a newer
+  version of SEAGit is published. If there is one and you agree, the Store
+  downloads and installs it. The Store learns which program and version asked,
+  as it does whenever it updates a Store app; SEAGit sends nothing else with it.
+  A copy not installed from the Store cannot ask, and offers the Store page
+  instead.
+- Help for this screen, Help on the web, and the links in About SEAGit (SEAGit's
+  page on softwareplus.ai, its Microsoft Store page, all of Dr. Ron Eaglin's
+  programs, and this policy) open in your own web browser, under that browser's
+  own settings. SEAGit itself sends nothing to those sites.
+
+SEAGit makes no other connections. It does not check for updates in the
+background, report errors, or contact us. The Microsoft Store also installs and
+updates SEAGit on its own, as it does for every Store app.
+
+
+7. INFORMATION WE COLLECT
+
+None. SEAGit contains no analytics or telemetry. We do not collect, receive or
+store your files, your GitHub sign-in, or any personal information, and we
+operate no server that SEAGit talks to.
+
+
+8. THIRD PARTIES
+
+Two third parties can receive anything from SEAGit, chosen by you and only as
+described above: GitHub, when you sign in and publish; and Microsoft, which runs
+the Store you installed SEAGit from and answers Check for a new version.
+Microsoft's privacy statement covers the Store and Windows Credential Manager.
+
+
+9. CHILDREN
+
+SEAGit is a productivity tool for general audiences, used by students and
+teachers among others. It collects no information from anyone, so it collects
+none from children. Whether a child may have a GitHub account is set by GitHub's
+own terms.
+
+
+10. CHANGES TO THIS POLICY
+
+Updates will be posted at https://softwareplus.ai/seagit/privacy/ with a new
+effective date. If a future version of SEAGit does something this policy does
+not describe, the policy will say so before that version ships.
+
+
+11. CONTACT
+
+Dean Eaglin - ron.eaglin@gmail.com

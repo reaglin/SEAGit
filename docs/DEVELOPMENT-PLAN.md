@@ -56,7 +56,7 @@ own Git settings hidden. Release build: no warnings (the 4 nullable warnings tha
 |---|---|---|
 | 2.1 | Ron's hand-test round 2026-11 passes | ⚠️ Ron |
 | 2.2 | Store package 1.0.6.0 built (`msix/build-msix.ps1`, `DEPLOY_TO_WIN_APP_STORE.md`); WACK | ⬜ |
-| 2.3 | Store listing: "no network use" softened (the update check and publishing go online only when asked); privacy policy question 1 answered | ⚠️ Ron: question 1 |
+| 2.3 | Store listing: "no network use" softened (the update check and publishing go online only when asked); privacy policy question 1 answered | ⚠️ **Wording changed 2026-10-31 per Ron (reflect the reality); ⚠️ Ron to read the page** — the policy moved to softwareplus.ai/seagit/privacy/ (new page; `PRIVACY_POLICY.txt` is the same text): Git built in, publishing only to the linked repository on Publish Selected, the name and e-mail on commits, GitHub's own browser sign-in, Check for a new version, the browser links, contact ron.eaglin@gmail.com (the placeholder is gone); effective October 31, 2026, version 1.0.6. Ron: set Partner Center's privacy URL to the new address, and soften the listing's "no network use" (its text is not in this repo) |
 | 2.4 | Submitted; when live, tag `v1.0.6` and update SoftwarePlus.ai (1.12) | ⬜ |
 
 ### Release notes 1.0.6 (paste-ready, standing until the release)
@@ -84,6 +84,8 @@ SEAGit 1.0.6
    "[add a support email address here before publishing]", and does not mention that Help ▸ Check for a new version
    asks the Microsoft Store. Should it move to softwareplus.ai/seagit/privacy/ like the other programs, with those three
    fixed? Not changed without you.
+   **Answered 2026-10-31 (Ron: "Change wording to reflect the reality of the programs"):** yes — moved to
+   softwareplus.ai/seagit/privacy/ with all three fixed (task 2.3).
 2. **(asked 2026-10-31) The name on commits.** On a computer with no Git name set, commits are signed with the Windows
    user name and `seagit-user@seagit.invalid`, so GitHub shows them without an avatar. Would you rather SEAGit ask once
    for "the name to show on GitHub"?

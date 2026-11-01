@@ -182,9 +182,11 @@ Produces a **signed** `.msix`. Recipients install `SEAGit-SelfSigned.cer` into
 ## 6. Privacy policy
 
 The Microsoft Store requires a public **privacy policy URL** for any app that
-accesses the network. The policy text is in `PRIVACY_POLICY.txt` in the
-repository root. Before submitting, host it at a public URL and enter that URL
-in the submission. Keep the hosted copy and `PRIVACY_POLICY.txt` in sync.
+accesses the network. The policy is published at
+**https://softwareplus.ai/seagit/privacy/** (from 1.0.6; `SoftwarePlus\site\seagit\privacy\index.html`),
+and `PRIVACY_POLICY.txt` in the repository root is a plain-text copy of the same
+words. Enter that URL in the submission. Change the page first, then this copy,
+and keep the two identical.
 
 ---
 

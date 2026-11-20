@@ -20,6 +20,18 @@ Claude never marks an item ✅; only Ron's confirmation does. Hand-test steps ar
 
 ---
 
+## Priority for the next version — Help ▸ Send feedback (Ron, 2026-11-20)
+
+Ron: *"creating a seamless path for feedback for all the programs … I would want to review the comments and mark for
+implementation or discard."* Every program gets the same menu item; what a person writes goes to one private inbox on
+SoftwarePlus.ai, where Ron marks it Implement or Discard. The site side is SoftwarePlus plan phase 9; the rule is in
+`..\CLAUDE.md`, "Every program: Help ▸ Send feedback". **Ship it with the next version of SEAGit.**
+
+| # | Task | Done when |
+|---|---|---|
+| F.1 | **Help ▸ Send feedback…** (beside Check for a new version; the same words in every program): opens `https://softwareplus.ai/feedback/?program=seagit&version=<this version>` in the browser. Its tooltip: "Tell us about a bug, a suggestion or anything you noticed — it goes to Dr. Ron Eaglin." No form inside the program and no network code: the web page does the rest. The privacy policy gets the paragraph from SoftwarePlus 9.5 | the menu item opens the form naming SEAGit and its version (after SoftwarePlus 9.1 is live) |
+| F.2 | **Feedback marked Implement** for SEAGit (read from the inbox, SoftwarePlus 9.4) becomes tasks in this plan, each quoting the item, its date and version; the inbox marks them In plan | checked at the start of every round of work on SEAGit |
+
 ## Phase 1 — the 1.0.6 UX round (2026-10-31)
 
 A pre-release UX review found 2 critical and 6 major problems, plus minors; Ron then asked for a usability pass
